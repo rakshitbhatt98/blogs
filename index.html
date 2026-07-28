@@ -3,373 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rakshit Bhatt — Blog</title>
-  <meta name="description" content="Technical writing on AI, machine learning, and the mathematics of modern systems.">
+  <title>The Forward Pass — Rakshit Bhatt</title>
+  <meta name="description" content="First-principles explainers on how modern AI systems actually work.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
-      --bg:       #0c0b10;
-      --bg-card:  #131219;
-      --bg-hover: #17161f;
-      --text:     #f0eee9;
-      --body:     #b3b0aa;
-      --muted:    #6a6870;
-      --gold:     #d4a853;
-      --gold-dim: rgba(212,168,83,0.1);
-      --purple:   #8b78f5;
-      --border:   rgba(255,255,255,0.055);
-      --border-h: rgba(212,168,83,0.22);
+      --color-bg:      #161826;
+      --color-surface: #232532;
+      --color-text:    #e9e9ed;
+      --color-accent:  #9184d9;
+      --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+      --font-heading:  "Inter", system-ui, sans-serif;
+      --font-body:     "Inter", system-ui, sans-serif;
+      --radius-md:     8px;
+      --radius-lg:     14px;
     }
 
+    *, *::before, *::after { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', system-ui, sans-serif;
+      margin: 0;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.55;
       -webkit-font-smoothing: antialiased;
     }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-text) 14%, transparent); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--color-text) 24%, transparent); }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    h1, h2, h3 { font-family: var(--font-heading); font-weight: 500; letter-spacing: -0.015em; margin: 0; }
+
+    .tag {
+      display: inline-flex; align-items: center; font-size: 11px;
+      letter-spacing: 0.02em; padding: 3px 10px;
+      border-radius: calc(var(--radius-md) * 0.75);
+    }
+    .tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
 
     /* ── Header ── */
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 2.1rem 2.5rem;
+      max-width: 1080px; margin: 0 auto;
+      padding: 44px 32px 0;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    }
+    .brand {
+      font-family: var(--font-heading); font-weight: 500;
+      font-size: 22px; letter-spacing: -0.015em;
+      color: var(--color-text); text-decoration: none;
+    }
+    .byline { font-size: 12px; letter-spacing: .02em; color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+
+    .rule-top {
+      max-width: 1080px; margin: 22px auto 0; height: 1px; border: 0;
+      background: linear-gradient(to right, transparent, var(--color-divider) 32px, var(--color-divider) calc(100% - 32px), transparent);
     }
 
-    .site-name {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-style: italic;
-      font-size: 1.4rem;
-      color: var(--text);
-      text-decoration: none;
-      letter-spacing: -0.01em;
-    }
+    /* ── Main ── */
+    main { max-width: 1080px; margin: 0 auto; padding: 56px 32px 40px; }
 
-    .site-nav { list-style: none; display: flex; gap: 2rem; }
-    .site-nav a {
-      font-size: 0.82rem;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.18s;
+    .section-label {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
     }
-    .site-nav a:hover { color: var(--text); }
+    .section-label span:first-child {
+      font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+      color: color-mix(in srgb, var(--color-text) 46%, transparent);
+    }
+    .section-label .line { flex: 1; height: 1px; background: linear-gradient(to right, var(--color-divider), transparent); }
 
-    /* ── Masthead ── */
-    .masthead {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 4rem 2.5rem 2.6rem;
+    /* ── Featured post ── */
+    .feature {
+      display: flex; flex-wrap: wrap; gap: 44px; align-items: center;
+      text-decoration: none; color: inherit;
+      padding: 12px; margin: -12px; border-radius: 16px;
+      transition: background .2s;
     }
+    .feature:hover { background: color-mix(in srgb, var(--color-text) 3%, transparent); }
 
-    .masthead h1 {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-size: clamp(2.6rem, 6vw, 4rem);
-      font-weight: 400;
-      color: var(--text);
-      line-height: 1;
-      letter-spacing: -0.02em;
+    .feature-thumb {
+      flex: 1 1 380px; min-width: 280px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-divider);
+      background: #000;
+      overflow: hidden; aspect-ratio: 16/10; position: relative;
     }
+    .feature-thumb img {
+      display: block; width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+      transition: transform .3s ease;
+    }
+    .feature:hover .feature-thumb img { transform: scale(1.03); }
 
-    .masthead .rule {
-      margin-top: 2.4rem;
-      height: 1px;
-      background: var(--border);
-    }
+    .feature-text { flex: 1 1 380px; min-width: 280px; }
+    .feature-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .feature-meta .dt { font-size: 12px; color: color-mix(in srgb, var(--color-text) 42%, transparent); }
 
-    .masthead .count {
-      float: right;
-      margin-top: -0.7rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      color: var(--muted);
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      background: var(--bg);
-      padding-left: 1rem;
+    .feature-title {
+      font-size: 32px; font-weight: 500; line-height: 1.12; letter-spacing: -0.02em;
+      margin: 0 0 14px; text-wrap: balance;
+      transition: color .2s;
     }
+    .feature:hover .feature-title { color: var(--color-accent); }
 
-    /* ── Grid ── */
-    .grid {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 3rem 2.5rem 8rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-      gap: 2.2rem 2rem;
+    .feature-excerpt {
+      font-size: 15.5px; line-height: 1.6;
+      color: color-mix(in srgb, var(--color-text) 62%, transparent);
+      margin: 0 0 20px; text-wrap: pretty;
     }
-
-    /* ── Card ── */
-    .card {
-      display: flex;
-      flex-direction: column;
-      text-decoration: none;
-      border-radius: 12px;
-      overflow: hidden;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      transition: border-color 0.24s, transform 0.24s, box-shadow 0.24s, background 0.24s;
+    .read-more {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 14px; font-weight: 500; color: var(--color-accent);
     }
-    .card:hover {
-      border-color: var(--border-h);
-      background: var(--bg-hover);
-      transform: translateY(-4px);
-      box-shadow: 0 14px 40px rgba(0,0,0,0.45);
-    }
-
-    .thumb {
-      width: 100%;
-      aspect-ratio: 16 / 10;
-      background: #09080f;
-      overflow: hidden;
-      position: relative;
-      border-bottom: 1px solid var(--border);
-    }
-    .thumb svg { width: 100%; height: 100%; display: block; }
-
-    .card-body {
-      padding: 1.5rem 1.6rem 1.7rem;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-
-    .tags { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.64rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      padding: 0.24rem 0.58rem;
-      border-radius: 3px;
-      background: var(--gold-dim);
-      color: var(--gold);
-      border: 1px solid rgba(212,168,83,0.16);
-    }
-    .tag.muted {
-      background: rgba(255,255,255,0.035);
-      color: var(--muted);
-      border-color: var(--border);
-    }
-
-    .card-title {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-size: 1.4rem;
-      font-weight: 400;
-      color: var(--text);
-      line-height: 1.24;
-      letter-spacing: -0.01em;
-      margin-bottom: 0.7rem;
-    }
-
-    .card-excerpt {
-      font-size: 0.865rem;
-      color: var(--body);
-      line-height: 1.72;
-      margin-bottom: 1.5rem;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .card-meta {
-      margin-top: auto;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      color: var(--muted);
-    }
-    .card-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--muted); }
-    .card-meta .arrow {
-      margin-left: auto;
-      color: var(--gold);
-      transition: transform 0.18s;
-    }
-    .card:hover .card-meta .arrow { transform: translateX(3px); }
+    .read-more .arrow { font-size: 16px; transition: transform .18s; }
+    .feature:hover .read-more .arrow { transform: translateX(3px); }
 
     /* ── Footer ── */
     footer {
-      border-top: 1px solid var(--border);
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 1.9rem 2.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      max-width: 1080px; margin: 24px auto 0;
+      padding: 32px; border-top: 1px solid var(--color-divider);
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
     }
-    footer, footer a {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      color: var(--muted);
-      text-decoration: none;
-    }
-    footer a:hover { color: var(--gold); }
+    footer, footer a { font-size: 12px; color: color-mix(in srgb, var(--color-text) 38%, transparent); text-decoration: none; }
+    footer a:hover { color: var(--color-accent); }
 
-    /* ── Responsive ── */
     @media (max-width: 560px) {
-      header { padding: 1.7rem 1.3rem; }
-      .masthead { padding: 2.6rem 1.3rem 2rem; }
-      .grid { padding: 2rem 1.3rem 5rem; grid-template-columns: 1fr; }
-      footer { padding: 1.6rem 1.3rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+      header { padding: 32px 20px 0; }
+      main { padding: 40px 20px 32px; }
+      .feature-title { font-size: 27px; }
+      footer { padding: 24px 20px; flex-direction: column; gap: 8px; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <a href="/" class="site-name">Rakshit Bhatt</a>
-  <ul class="site-nav">
-    <li><a href="mailto:rakshit@galaxeye.space">Contact</a></li>
-  </ul>
+  <a href="/" class="brand">The&nbsp;Forward&nbsp;Pass</a>
+  <span class="byline">Rakshit Bhatt</span>
 </header>
 
-<div class="masthead">
-  <h1>Blog</h1>
-  <div class="rule"><span class="count">1 article</span></div>
-</div>
+<hr class="rule-top">
 
-<main class="grid">
+<main>
+  <div class="section-label">
+    <span>Latest</span>
+    <span class="line"></span>
+  </div>
 
-  <!-- ── MoE post ── -->
-  <a href="blog/moe.html" class="card">
-    <div class="thumb">
-      <svg viewBox="0 0 360 225" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <radialGradient id="bg" cx="55%" cy="40%" r="70%">
-            <stop offset="0%" stop-color="#17122b"/>
-            <stop offset="100%" stop-color="#070610"/>
-          </radialGradient>
-          <filter id="gf" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="2.6" result="b"/>
-            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <filter id="sgf" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="5" result="b"/>
-            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-
-        <rect width="360" height="225" fill="url(#bg)"/>
-
-        <!-- grid -->
-        <g stroke="rgba(255,255,255,0.03)" stroke-width="0.6">
-          <line x1="0" y1="56"  x2="360" y2="56"/>
-          <line x1="0" y1="112" x2="360" y2="112"/>
-          <line x1="0" y1="169" x2="360" y2="169"/>
-          <line x1="90"  y1="0" x2="90"  y2="225"/>
-          <line x1="180" y1="0" x2="180" y2="225"/>
-          <line x1="270" y1="0" x2="270" y2="225"/>
-        </g>
-
-        <!-- token nodes -->
-        <g filter="url(#gf)">
-          <circle cx="50" cy="60"  r="9" fill="none" stroke="#d4a853" stroke-width="1.3" opacity="0.95"/>
-          <text x="50" y="63"  text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.9">t1</text>
-          <circle cx="50" cy="95"  r="9" fill="none" stroke="#d4a853" stroke-width="1.3" opacity="0.82"/>
-          <text x="50" y="98"  text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.82">t2</text>
-          <circle cx="50" cy="130" r="9" fill="none" stroke="#d4a853" stroke-width="1.3" opacity="0.58"/>
-          <text x="50" y="133" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.58">t3</text>
-          <circle cx="50" cy="165" r="9" fill="none" stroke="#d4a853" stroke-width="1.3" opacity="0.48"/>
-          <text x="50" y="168" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.48">t4</text>
-        </g>
-
-        <!-- dim lines -->
-        <g stroke="rgba(255,255,255,0.05)" stroke-width="0.6" fill="none">
-          <line x1="59" y1="60"  x2="166" y2="78"/>
-          <line x1="59" y1="60"  x2="166" y2="106"/>
-          <line x1="59" y1="60"  x2="166" y2="134"/>
-          <line x1="59" y1="60"  x2="166" y2="162"/>
-          <line x1="59" y1="95"  x2="166" y2="78"/>
-          <line x1="59" y1="95"  x2="166" y2="106"/>
-          <line x1="59" y1="95"  x2="166" y2="134"/>
-          <line x1="59" y1="95"  x2="166" y2="162"/>
-          <line x1="59" y1="130" x2="166" y2="78"/>
-          <line x1="59" y1="130" x2="166" y2="106"/>
-          <line x1="59" y1="130" x2="166" y2="134"/>
-          <line x1="59" y1="130" x2="166" y2="162"/>
-          <line x1="59" y1="165" x2="166" y2="78"/>
-          <line x1="59" y1="165" x2="166" y2="106"/>
-          <line x1="59" y1="165" x2="166" y2="134"/>
-          <line x1="59" y1="165" x2="166" y2="162"/>
-        </g>
-
-        <!-- active routing -->
-        <line x1="59" y1="60"  x2="166" y2="78"  stroke="#d4a853" stroke-width="1.4" opacity="0.9"/>
-        <line x1="59" y1="60"  x2="166" y2="162" stroke="#8b78f5" stroke-width="1.2" opacity="0.72"/>
-        <line x1="59" y1="95"  x2="166" y2="106" stroke="#d4a853" stroke-width="1.4" opacity="0.82"/>
-        <line x1="59" y1="95"  x2="166" y2="162" stroke="#8b78f5" stroke-width="1.1" opacity="0.6"/>
-        <line x1="59" y1="130" x2="166" y2="134" stroke="#d4a853" stroke-width="1.2" opacity="0.7"/>
-        <line x1="59" y1="130" x2="166" y2="78"  stroke="#8b78f5" stroke-width="1.0" opacity="0.52"/>
-        <line x1="59" y1="165" x2="166" y2="78"  stroke="#d4a853" stroke-width="1.1" opacity="0.58"/>
-        <line x1="59" y1="165" x2="166" y2="106" stroke="#8b78f5" stroke-width="1.0" opacity="0.48"/>
-
-        <!-- router -->
-        <rect x="166" y="80" width="56" height="28" rx="5" fill="#11101c" stroke="#6366f1" stroke-width="1" opacity="0.95"/>
-        <text x="194" y="97" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#8b78f5" opacity="0.9">Router</text>
-        <text x="194" y="122" text-anchor="middle" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.2)">top-k = 2</text>
-
-        <!-- router → experts -->
-        <line x1="222" y1="94" x2="258" y2="76"  stroke="#d4a853" stroke-width="1.3" opacity="0.85"/>
-        <line x1="222" y1="94" x2="258" y2="106" stroke="#d4a853" stroke-width="1.2" opacity="0.78"/>
-        <line x1="222" y1="94" x2="258" y2="134" stroke="#8b78f5" stroke-width="1.1" opacity="0.62"/>
-        <line x1="222" y1="94" x2="258" y2="162" stroke="#8b78f5" stroke-width="1.0" opacity="0.55"/>
-
-        <!-- experts -->
-        <rect x="258" y="63"  width="66" height="24" rx="5" fill="#15111f" stroke="#d4a853" stroke-width="1.2" opacity="0.95"/>
-        <text x="291" y="78"  text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.92">Expert 0</text>
-        <rect x="258" y="95"  width="66" height="24" rx="5" fill="#14111e" stroke="#d4a853" stroke-width="1"   opacity="0.8"/>
-        <text x="291" y="110" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.78">Expert 1</text>
-        <rect x="258" y="127" width="66" height="24" rx="5" fill="#120f1e" stroke="#8b78f5" stroke-width="1"   opacity="0.7"/>
-        <text x="291" y="142" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#8b78f5" opacity="0.68">Expert 2</text>
-        <rect x="258" y="159" width="66" height="24" rx="5" fill="#0e0d14" stroke="rgba(255,255,255,0.08)" stroke-width="0.8" opacity="0.36"/>
-        <text x="291" y="174" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#6a6870" opacity="0.36">Expert 3</text>
-
-        <!-- glow -->
-        <circle cx="258" cy="75"  r="3" fill="#d4a853" opacity="0.5" filter="url(#sgf)"/>
-        <circle cx="258" cy="107" r="2.6" fill="#d4a853" opacity="0.42" filter="url(#sgf)"/>
-        <circle cx="258" cy="139" r="2.6" fill="#8b78f5" opacity="0.4" filter="url(#sgf)"/>
-
-        <!-- matrix hint -->
-        <g font-family="monospace" font-size="6" fill="rgba(212,168,83,0.08)" text-anchor="middle">
-          <text x="332" y="44">0.885</text>
-          <text x="312" y="36">0.114</text>
-          <text x="330" y="200">0.256</text>
-          <text x="312" y="210">0.743</text>
-        </g>
-
-        <text x="194" y="196" text-anchor="middle" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.15)">8 of 16 paths active</text>
-      </svg>
+  <a href="blog/moe.html" class="feature">
+    <div class="feature-thumb">
+      <img src="assets/inference-moe.jpeg" alt="Mixture-of-Experts inference — a neural brain routing tokens across GPUs" loading="lazy">
     </div>
 
-    <div class="card-body">
-      <div class="tags">
-        <span class="tag">Machine Learning</span>
-        <span class="tag muted">Deep Dive</span>
+    <div class="feature-text">
+      <div class="feature-meta">
+        <span class="tag tag-outline">Machine Learning</span>
+        <span class="dt">July 2026 &nbsp;·&nbsp; ~50 min</span>
       </div>
-      <h2 class="card-title">How a Mixture&#x2011;of&#x2011;Experts Model Actually Works</h2>
-      <p class="card-excerpt">Every number, worked out by hand. A complete walkthrough of MoE architecture — from tokenisation through multi-head attention, expert routing, and FFN processing — using a toy model where every matrix fits on the page.</p>
-      <div class="card-meta">
-        <span>July 2026</span>
-        <span class="dot"></span>
-        <span>45 min read</span>
-        <span class="arrow">→</span>
-      </div>
+      <h2 class="feature-title">How a Mixture-of-Experts Model Actually Works</h2>
+      <p class="feature-excerpt">A complete, working language model — small enough that every single number fits on the page. We push one sentence through it, from raw text to a probability over the next word, with every matrix printed in full.</p>
+      <span class="read-more">Read the post <span class="arrow">→</span></span>
     </div>
   </a>
-
 </main>
 
 <footer>
-  <span>© 2026 Rakshit Bhatt</span>
+  <span>The Forward Pass &nbsp;·&nbsp; 2026</span>
   <a href="mailto:rakshit@galaxeye.space">rakshit@galaxeye.space</a>
 </footer>
 
