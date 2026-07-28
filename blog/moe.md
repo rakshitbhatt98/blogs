@@ -1,9 +1,9 @@
-# How a Mixture-of-Experts Model Actually Works
+# The Anatomy of Mixture of Experts Transformer
 
 ### Every number, worked out by hand
 
-Mixtral 8×7B holds about **46.7 billion** parameters but generates text at roughly the speed of
-a **13 billion** parameter model. That is not a compression trick or a quantization trick. It is
+DeepSeek-V3 holds about **671 billion** parameters but generates text at roughly the speed of
+a **37 billion** parameter model. That is not a compression trick or a quantization trick. It is
 an architectural one, and it is called **Mixture of Experts**.
 
 Most explanations of MoE stop at a block diagram with arrows. This post does the opposite. We
@@ -16,9 +16,8 @@ By the end you will have seen, in actual numbers:
 - how a word becomes a vector,
 - how attention lets one word read another,
 - how a **router** decides which experts a token gets sent to,
-- why that decision is what makes a 47B model run like a 13B one,
+- why that decision is what makes a 671B model run like a 37B one,
 - and how the whole thing turns into a prediction.
-
 
 ---
 
@@ -75,38 +74,31 @@ By the end you will have seen, in actual numbers:
 
 **What MoE buys you**
 
-
 **What real MoEs change**
-
 
 **Capacity and dropping**
 
-
-**Scaling to real Mixtral**
-
+**Scaling to real DeepSeek-V3**
 
 **Glossary**
 
-
 **The whole model on one page**
-
 
 ---
 
-## Who this post is for
+## Prerequisites
 
 You should be comfortable with **matrix multiplication** — if `(4 × 2) · (2 × 4) = (4 × 4)`
 looks normal to you, you have enough.
 
 You do **not** need to have read a transformer paper, know what an embedding is, or have any
-prior exposure to attention or MoE. Every ML-specific idea is defined the first time it appears,
-and there is a [glossary](#glossary) at the end.
+prior exposure to attention or MoE. Every ML-specific idea is defined the first time it appears.
 
 There is no code to run and no framework to install. Just arithmetic.
 
 ---
 
-## The 60-second version
+## Overview
 
 If you read nothing else, read this.
 
@@ -188,28 +180,27 @@ and watch it predict what comes next. (Spoiler: it says `"the"`, with `"mat"` in
 
 Our toy model is a real model in every structural sense — it just has small numbers:
 
-| | Our model | Mixtral 8×7B |
+| | Our model | DeepSeek-V3 |
 |---|---|---|
-| Words in the prompt | 4 | up to 32,768 |
-| Vector width (`d_model`) | 4 | 4096 |
-| Attention heads | 2 | 32 |
-| Blocks stacked | 1 | 32 |
-| Experts | 4 | 8 |
-| Experts used per token | 2 | 2 |
-| Vocabulary | 6 | 32,000 |
+| Words in the prompt | 4 | up to 128,000 |
+| Vector width (`d_model`) | 4 | 7168 |
+| Attention heads | 2 | 128 |
+| Blocks stacked | 1 | 61 |
+| Routed experts | 4 | 256 (+1 shared) |
+| Experts used per token | 2 | 8 |
+| Vocabulary | 6 | ~128,000 |
 
-Every operation you are about to see is the operation Mixtral performs. Only the sizes differ.
+Every operation you are about to see is a genuine transformer operation; DeepSeek-V3 runs the same steps at far larger sizes.
 
----
 ---
 
 # PART 0 — THE FIVE IDEAS YOU NEED FIRST
 
 If you already know what embeddings, the residual stream, and softmax are, skip to
-[Part I](#part-i--attention-how-words-read-each-other). Otherwise, these five ideas are all the
+[Part 2](#part-i--attention-how-words-read-each-other). Otherwise, these five ideas are all the
 background required.
 
-## 0.1 — A language model is a next-word guesser in a loop
+## 1.1 — A language model is a next-word guesser in a loop
 
 That is genuinely all it does. Given `"the cat sat on"`, it outputs a probability for every word
 it knows:
@@ -227,7 +218,7 @@ hundreds of times.
 
 So our job in this post is to trace **one turn of that loop**, completely.
 
-## 0.2 — Words become vectors, because computers do arithmetic, not language
+## 1.2 — Words become vectors, because computers do arithmetic, not language
 
 A model cannot multiply the word "cat". So step one is always to replace each word with a list
 of numbers.
@@ -240,7 +231,7 @@ This happens in two stages:
    `[-1.588275, 2.284264, 0.256386, 0.969211]`.
 
 That list of 4 numbers *is* the word, as far as the model is concerned. It is called an
-**embedding**, and its width (`d_model = 4` here, 4096 in Mixtral) is fixed for the whole model.
+**embedding**, and its width (`d_model = 4` here, 7168 in DeepSeek-V3) is fixed for the whole model.
 
 Why a vector and not a single number? Because a vector has a **direction**, and directions can
 encode relationships. Words with similar meanings end up pointing in similar directions, which
@@ -251,7 +242,7 @@ writes them by hand, which is exactly why they look random.
 > currently representing this token at this point in the network". It starts as the embedding
 > and gets modified as it flows through.
 
-## 0.3 — The residual stream is a shared workspace
+## 1.3 — The residual stream is a shared workspace
 
 Here is the single most useful mental model for reading any transformer.
 
@@ -282,7 +273,7 @@ Two reasons this matters, and both will show up in the numbers:
   backwards through the `+` without passing through any matrix, so it does not fade away over
   dozens of layers.
 
-## 0.4 — "Weights" are just numbers that were learned, then frozen
+## 1.4 — "Weights" are just numbers that were learned, then frozen
 
 You will see matrices named `W_Q`, `W_r`, `W1[0]`, and so on. Every one of them is a grid of
 numbers that was adjusted during **training** and is now **fixed**. When you chat with a model,
@@ -293,7 +284,7 @@ The only thing that varies is the input. Same weights, different sentence, diffe
 So when this post says a matrix is "learned", read it as: *these numbers were tuned over
 billions of examples; we are just using them now.*
 
-## 0.5 — Softmax turns any list of numbers into probabilities
+## 1.5 — Softmax turns any list of numbers into probabilities
 
 Softmax appears **three times** in this post, doing three different jobs, so it is worth 30
 seconds now.
@@ -321,13 +312,11 @@ the operation, and it differs each time:
 
 | Where | Normalized over | Answers the question |
 |---|---|---|
-| A8, attention | keys (other tokens) | "where should this word look?" |
-| M3, router | experts | "which experts should handle this word?" |
-| P3, output | vocabulary | "which word comes next?" |
+| 2.9, attention | keys (other tokens) | "where should this word look?" |
+| 3.5, router | experts | "which experts should handle this word?" |
+| 4.3, output | vocabulary | "which word comes next?" |
 
 ---
----
-
 
 # PART I — ATTENTION: HOW WORDS READ EACH OTHER
 
@@ -336,9 +325,9 @@ else — including the whole MoE half of this post — processes each word in to
 
 Nine steps. We start from raw text and finish with an updated conveyor belt.
 
-## A0. Where attention sits
+## 2.1 — Where attention sits
 
-A Mixtral-style block is two sub-layers, each wrapped in a pre-norm and a residual:
+A modern MoE transformer block is two sub-layers, each wrapped in a pre-norm and a residual:
 
 ```
   ids → Embed
@@ -364,7 +353,7 @@ The two sub-layers divide the labour cleanly:
 - **The FFN (here, the MoE) processes each position *independently*.** It never looks sideways.
   It is where the model's stored knowledge lives.
 
-MoE only ever replaces the second one. Attention in a Mixtral block is byte-for-byte identical
+MoE only ever replaces the second one. Attention here is byte-for-byte identical
 to attention in a dense Llama block — which is why the walkthrough below has nothing
 MoE-specific in it.
 
@@ -380,13 +369,13 @@ MoE-specific in it.
 | RoPE base | `θ₀` | 1.0 |
 | masking | | causal |
 
-Real Mixtral uses `d_head = 128` and RoPE base 1,000,000. With `d_head = 2` there is exactly
+Real models use far wider heads — DeepSeek-V3's rotary sub-vector alone spans 64 dimensions, with RoPE base 10,000. With `d_head = 2` there is exactly
 **one** rotation pair per head, which makes RoPE a single 2-D rotation you can picture — that's
 the whole reason for the small numbers.
 
 ---
 
-## A1 — Tokenize and embed
+## 2.2 — Tokenize and embed
 
 **In plain English:** turn the words into numbers by looking them up in a table.
 
@@ -428,11 +417,11 @@ Gathering rows 0–3 gives the initial residual stream:
 ```
 
 Note what is *not* here: no position information at all. Row t1 would be identical if "the"
-appeared at the end of the sentence. Position enters in step A5, not here.
+appeared at the end of the sentence. Position enters in step 2.6, not here.
 
 ---
 
-## A2 — RMSNorm
+## 2.3 — RMSNorm
 
 **In plain English:** rescale each token's vector so they are all roughly the same size.
 
@@ -471,7 +460,7 @@ the norm feeds the sub-layer, and the un-normalized `Emb` is what gets added bac
 
 ---
 
-## A3 — Q, K, V projections
+## 2.4 — Q, K, V projections
 
 **In plain English:** each word produces three different vectors, so that words can search each
 other like a database.
@@ -547,7 +536,7 @@ each value to take. Q and K only ever meet inside a dot product; V is the payloa
 
 ---
 
-## A4 — Split into heads
+## 2.5 — Split into heads
 
 **In plain English:** run several independent attention operations side by side, each on a slice
 of the vector.
@@ -601,17 +590,17 @@ antecedent of a pronoun, and so on) at zero extra cost, since `n_heads · d_head
    t4 [ -0.168558 -0.325248 ]   t4 [  0.806549  1.400595 ]
 ```
 
-From here, heads 0 and 1 proceed **completely independently** through steps A5–A9 and only
+From here, heads 0 and 1 proceed **completely independently** through steps 2.6–2.10 and only
 meet again at the concatenation.
 
 ---
 
-## A5 — RoPE positional rotation
+## 2.6 — RoPE positional rotation
 
 **In plain English:** stamp each word with its position by rotating its vector — further along
 the sentence means a bigger turn.
 
-Look back at the embeddings in A1. Nothing in them says *where* in the sentence a word sits. The
+Look back at the embeddings in 2.2. Nothing in them says *where* in the sentence a word sits. The
 row for "the" is the same row whether it is the first word or the last. But position obviously
 matters: "the cat sat on the mat" and "the mat sat on the cat" use identical words.
 
@@ -678,7 +667,7 @@ equal to the position index in radians:
 ```
 
 *(A note on conventions: this document pairs adjacent dimensions, `(d0,d1)`, `(d2,d3)`, … The
-HuggingFace Llama/Mixtral implementation instead pairs `(d0, d0+d_head/2)` via its `rotate_half`
+HuggingFace Llama implementation instead pairs `(d0, d0+d_head/2)` via its `rotate_half`
 helper. The two are related by a permutation of columns and are mathematically equivalent — but
 weights are not interchangeable between them.)*
 
@@ -816,7 +805,7 @@ belongs in the matching, not in the cargo.
 
 ---
 
-## A6 — Attention scores
+## 2.7 — Attention scores
 
 **In plain English:** score how strongly every word wants to read from every other word.
 
@@ -837,13 +826,13 @@ head**. Two heads means two score matrices, and they never interact.
 ### Which `Q` and `K`, and what shape
 
 This document has used the names `Q` and `K` for two different things, so to be exact — the
-matrices entering A6 are the **per-head slices, after RoPE**, from A5. Not the full `(4×4)`
-projections from A3:
+matrices entering 2.7 are the **per-head slices, after RoPE**, from 2.6. Not the full `(4×4)`
+projections from 2.4:
 
 | | Object | Shape | Source |
 |---|---|---|---|
-| ✗ not this | `Q`, `K` full | `(T × d_model)` = `(4 × 4)` | A3 |
-| ✓ this | `Q_h`, `K_h` rotated | `(T × d_head)` = `(4 × 2)` | A5 |
+| ✗ not this | `Q`, `K` full | `(T × d_model)` = `(4 × 4)` | 2.4 |
+| ✓ this | `Q_h`, `K_h` rotated | `(T × d_head)` = `(4 × 2)` | 2.6 |
 
 ```
    Q_h          ·        K_hᵀ         =        S_h
@@ -854,11 +843,11 @@ projections from A3:
 ```
 
 Note what this means: **`d_head` vanishes from the output shape.** The score matrix is `(T × T)`
-no matter how wide the head is — 2 here, 128 in Mixtral. Every head produces a same-shaped
+no matter how wide the head is — 2 here, 192 in DeepSeek-V3. Every head produces a same-shaped
 `(T × T)` attention pattern; the head width only controls how much room the model has to
 *express* that pattern, not its size.
 
-The scaling is `√d_head`, **not** `√d_model` — `√2 = 1.414214` here, `√128 = 11.31` in Mixtral.
+The scaling is `√d_head`, **not** `√d_model` — `√2 = 1.414214` here, `√192 ≈ 13.86` in DeepSeek-V3.
 
 **Why divide by it at all.** The dot product of two `d_head`-dimensional vectors has variance
 proportional to `d_head`, so without the scaling the scores would grow with head width, the
@@ -882,7 +871,7 @@ softmax would saturate into a near-one-hot, and gradients would vanish.
 
 ---
 
-## A7 — Causal mask
+## 2.8 — Causal mask
 
 **In plain English:** stop each word from peeking at words that come after it.
 
@@ -926,7 +915,7 @@ ever attend to itself.
 
 ---
 
-## A8 — Softmax over keys
+## 2.9 — Softmax over keys
 
 **In plain English:** turn the raw scores into percentages that say how much attention to pay
 where.
@@ -939,7 +928,7 @@ those. Softmax converts each row into a set of weights that are all positive and
 attention to spend and must divide it among the words it is allowed to look at. Spending more on
 one means spending less on another.
 
-Every score we set to `−inf` in A7 becomes `e^(−inf) = 0`, so blocked positions get exactly zero
+Every score we set to `−inf` in 2.8 becomes `e^(−inf) = 0`, so blocked positions get exactly zero
 weight. That is why `−inf` was the right switch-off value.
 
 **Formula:** `A[i,j] = exp(S[i,j]) / Σ_j exp(S[i,j])`, taken **along the key axis** (each row
@@ -983,7 +972,7 @@ Row t1 is `[1,0,0,0]` in both — forced, not learned, since there is nothing el
 
 ---
 
-## A9 — Context, concat, output projection, residual
+## 2.10 — Context, concat, output projection, residual
 
 **In plain English:** actually fetch the information, stitch the heads back together, and add
 the result onto the conveyor belt.
@@ -1072,12 +1061,11 @@ onto a stream that already carries the token's identity. Gradients reach the emb
 the `+` without passing through any matrix, which is what makes deep stacks trainable. Think of
 the residual stream as a shared bus that each sub-layer reads from and adds to.
 
-This `X` is exactly the input assumed by Part II.
-
+This `X` is exactly the input assumed by Part 3.
 
 ---
 
-## ✅ What Part I accomplished
+## ✅ What Part 2 accomplished
 
 Worth pausing to consolidate before the MoE half.
 
@@ -1091,22 +1079,18 @@ heads → add to the residual stream.**
 
 Three things to carry forward:
 
-1. **`X` is the output**, and it is the input to everything in Part II. Attention's job is done.
+1. **`X` is the output**, and it is the input to everything in Part 3. Attention's job is done.
 2. **The `(T × T)` score grid is the expensive part.** It grows with the *square* of the sentence
    length, which is why long context windows are hard and why so much research targets this one
    matrix.
 3. **Nothing here is MoE-specific.** This is byte-for-byte the attention in a dense Llama model.
-   Mixtral changes what comes next, not this.
+   The MoE changes what comes next, not this.
 
----
----
-
----
 ---
 
 # PART II — THE MoE SUB-LAYER
 
-The residual stream `X` produced by A9 now enters the second sub-layer. Attention has finished
+The residual stream `X` produced by 2.10 now enters the second sub-layer. Attention has finished
 moving information between positions; from here every token is processed **independently**.
 
 ```
@@ -1118,9 +1102,9 @@ moving information between positions; from here every token is processed **indep
    t4      [  1.000000   1.000000   1.000000   1.000000 ]
 ```
 
-## M0. The one idea behind MoE
+## 3.1 — The one idea behind MoE
 
-In the dense block of A0, the second sub-layer is a single FFN. It holds most of the parameters
+In the dense block of 2.1, the second sub-layer is a single FFN. It holds most of the parameters
 (~2/3 of a dense Transformer), and **every token pays for every one of them**. MoE makes one
 change: replace that single FFN with `E` parallel FFNs ("experts") plus a tiny **router** that
 picks `k` of them per token.
@@ -1133,7 +1117,7 @@ picks `k` of them per token.
 ```
 
 **Total parameters scale with `E`; compute per token scales with `k`.** A big model that runs
-like a small one. Part I is untouched by any of this — attention in a Mixtral block is identical
+like a small one. Part 2 is untouched by any of this — the attention here is identical
 to attention in a dense Llama block.
 
 Routing is decided **per token, not per sequence**. Two tokens in the same sentence can go to
@@ -1141,9 +1125,9 @@ entirely different experts.
 
 ---
 
-## M0b. The MoE configuration
+## 3.2 — The MoE configuration
 
-Extending the config from A0:
+Extending the config from 2.1:
 
 | Symbol | Meaning | Value |
 |---|---|---|
@@ -1175,9 +1159,9 @@ ratio at any scale.)
 
 ---
 
-## M1 — RMSNorm
+## 3.3 — RMSNorm
 
-**In plain English:** same rescaling as A2, done again before the second sub-layer.
+**In plain English:** same rescaling as 2.3, done again before the second sub-layer.
 
 Every sub-layer in the model gets its own fresh normalization of the conveyor belt. Attention
 just added something to it, so the numbers have grown and need re-scaling before the router
@@ -1208,7 +1192,7 @@ nothing more.
 
 ---
 
-## M2 — Router logits
+## 3.4 — Router logits
 
 **In plain English:** the router scores how well each token matches each expert.
 
@@ -1221,7 +1205,7 @@ similarity measure used in attention. A high score means "this expert is a good 
 token."
 
 Notice how cheap this is. The router here is 16 numbers deciding how to spend 128 numbers' worth
-of expert compute. In Mixtral the router is about 32,000 parameters deciding the fate of 45
+of expert compute. In DeepSeek-V3 the router is about 1.8 million parameters deciding the fate of 671
 billion. **The decision is essentially free; the thing it controls is not.** That asymmetry is
 the entire economic case for MoE.
 
@@ -1263,7 +1247,7 @@ perfectly ambiguous between e0 and e1.
 
 ---
 
-## M3 — Softmax over experts
+## 3.5 — Softmax over experts
 
 **In plain English:** turn the router's raw scores into percentages across the experts.
 
@@ -1309,7 +1293,7 @@ changes, which is why MoE training is unstable and why balancing losses exist.
 
 ---
 
-## M4 — Top-k selection (k = 2)
+## 3.6 — Top-k selection (k = 2)
 
 **In plain English:** keep only the top 2 experts per token and throw the rest away.
 
@@ -1320,7 +1304,7 @@ The router just produced a probability for all 4 experts. We now discard all but
 for each token. Those discarded experts will not run for that token, will not consume any
 compute, and will not contribute anything to the output.
 
-Here that saves 50%. In Mixtral (2 of 8) it saves 75%. In DeepSeek-V3 (8 of 256) it saves about
+Here that saves 50%. In DeepSeek-V3 — 8 of 256 routed experts — it saves about
 97%. **The fraction you throw away is the speedup.**
 
 The cost of this trick is that the choice is *discrete* — an expert is either in or out, with
@@ -1336,8 +1320,7 @@ Keep the 2 largest entries of each row of `P`:
   t4:  e0 = 0.399486 ,  e1 = 0.399486    ← exact tie
 ```
 
-**This is the sparsity.** 8 of 16 (token, expert) pairs are now dead — 50% here, 75% in Mixtral
-(8 experts, top-2), ~97% in DeepSeek-V3 (256 routed, top-8). That discarded fraction *is* the
+**This is the sparsity.** 8 of 16 (token, expert) pairs are now dead — 50% here, ~97% in DeepSeek-V3 (256 routed, top-8). That discarded fraction *is* the
 efficiency gain.
 
 The tie at t4 is real, not contrived — it happens whenever a token sits on a decision boundary.
@@ -1347,7 +1330,7 @@ amount. Top-k is not continuous in its input, and this is an accepted wart of th
 
 ---
 
-## M5 — Renormalize the surviving gates
+## 3.7 — Renormalize the surviving gates
 
 **In plain English:** rescale the two surviving weights so they add to 1 again.
 
@@ -1359,7 +1342,7 @@ If we left it there, every token's output would be scaled by a different arbitra
 depending on how much probability happened to leak away. So we divide by what remains, restoring
 a clean split that sums to 1.
 
-The result is the **gate matrix `G`**, which is worth watching for the rest of Part II. It is
+The result is the **gate matrix `G`**, which is worth watching for the rest of Part 3. It is
 mostly zeros — one zero for every (token, expert) pair we are skipping — and those zeros are the
 sparsity, made concrete.
 
@@ -1392,7 +1375,7 @@ process:
 
 ---
 
-## M6 — The expert FFNs
+## 3.8 — The expert FFNs
 
 **In plain English:** each expert is an ordinary small neural network, and it only sees the
 tokens routed to it.
@@ -1667,7 +1650,7 @@ weights that gave t2 nothing.
 
 ---
 
-### M6 summary
+### 3.8 summary
 
 | Expert | Tokens | `H_e` shape | `O_e` shape | Non-zero rows out |
 |---|---|---|---|---|
@@ -1678,13 +1661,13 @@ weights that gave t2 nothing.
 
 ---
 
-## M7 — Combine: applying G to the expert outputs
+## 3.9 — Combine: applying G to the expert outputs
 
 **In plain English:** blend each token's expert outputs together, weighted by the router's
 confidence.
 
 Each token was processed by two experts and now has two candidate results. We mix them using the
-gate values from M5 — an expert the router was 88% confident about contributes 88% of the blend.
+gate values from 3.7 — an expert the router was 88% confident about contributes 88% of the blend.
 
 The bookkeeping step to notice is **scatter**. Each expert produced a short, compact output
 covering only its own tokens. Before we can add them, we spread each one back out into a
@@ -1799,11 +1782,11 @@ got almost nothing.
 
 ---
 
-## M8 — Residual add, then RMSNorm
+## 3.10 — Residual add, then RMSNorm
 
 **In plain English:** add the result back onto the conveyor belt, then rescale one last time.
 
-The MoE sub-layer is finished. Its output gets added to `X` — the same residual pattern from A9
+The MoE sub-layer is finished. Its output gets added to `X` — the same residual pattern from 2.10
 — and then normalized.
 
 Notice the shape of the result. It is `(4 × 4)`, exactly what came in. **An MoE layer is a
@@ -1812,7 +1795,7 @@ into an MoE by copying its FFN a few times and bolting a router on the front. Th
 called *upcycling*.
 
 If our model had more blocks, this output would flow straight into the next block's attention and
-the whole cycle would repeat. Mixtral does this 32 times.
+the whole cycle would repeat. DeepSeek-V3 does this 61 times.
 
 **Formula:** `out = RMSNorm(X + Y)`, using the **original un-normalized `X`**.
 
@@ -1840,15 +1823,12 @@ forward and the norm is what the next attention layer consumes.
 
 ---
 
-
----
-
-## ✅ What Part II accomplished
+## ✅ What Part 3 accomplished
 
 This was the MoE half, so it is worth being precise about what was actually different.
 
-Steps M1 and M8 — normalize, and add to the residual stream — are identical to what a dense model
-does. **Everything genuinely new happened in M2 through M7**, and it amounts to: score the
+Steps 3.3 and 3.10 — normalize, and add to the residual stream — are identical to what a dense model
+does. **Everything genuinely new happened in 3.4 through 3.9**, and it amounts to: score the
 experts, keep the best 2, run only those, blend the results.
 
 Four things to take away:
@@ -1865,15 +1845,11 @@ and returned nothing but zeros. Routing a token somewhere guarantees it gets pro
 it gets helped.
 
 ---
----
-
----
----
 
 # PART III — PREDICTING THE NEXT TOKEN
 
 We now hold `RMSNorm(X + Y)`, the final hidden states. In a real model this is the output of
-**final_norm** after the last of N blocks; in our 1-block model it is step M8's output directly.
+**final_norm** after the last of N blocks; in our 1-block model it is step 3.10's output directly.
 
 ```
   Final hidden states (4 × 4)
@@ -1886,7 +1862,7 @@ We now hold `RMSNorm(X + Y)`, the final hidden states. In a real model this is t
 
 ---
 
-## P1 — Unembedding to vocabulary logits
+## 4.1 — Unembedding to vocabulary logits
 
 **In plain English:** score every word in the vocabulary against the final hidden state.
 
@@ -1898,13 +1874,13 @@ the vocabulary. Each column is a learned direction meaning "evidence for this pa
 Take the dot product of the hidden state against each column and you get a score for every word.
 
 These raw scores are called **logits**. They are not probabilities yet — they can be negative,
-and they do not sum to anything in particular. Turning them into probabilities is P3.
+and they do not sum to anything in particular. Turning them into probabilities is 4.3.
 
 **Formula:** `logits = final · W_U`, shapes `(T × d_model) · (d_model × V) = (T × V)`.
 
 `W_U` (the "LM head") is a single linear map from the residual stream into vocabulary space.
 Column `v` is a learned direction meaning "evidence for token `v`", and the logit is the inner
-product of the hidden state with that direction. Mixtral keeps `W_U` **untied** from the
+product of the hidden state with that direction. DeepSeek-V3 keeps `W_U` **untied** from the
 embedding table — they are separate parameter blocks.
 
 ```
@@ -1926,12 +1902,12 @@ embedding table — they are separate parameter blocks.
 ```
 
 This is the **widest** matrix in the model and, in real systems, by far the most expensive
-single matrix multiply: `d_model × V` with `V` in the 32k–256k range. Mixtral's `W_U` alone is
-`4096 × 32000 ≈ 131 M` parameters.
+single matrix multiply: `d_model × V` with `V` in the 32k–256k range. DeepSeek-V3's `W_U` alone is
+`7168 × 129,280 ≈ 927 M` parameters.
 
 ---
 
-## P2 — Only the last row matters
+## 4.2 — Only the last row matters
 
 **In plain English:** we computed a prediction at every position, but only the last one is
 useful right now.
@@ -1939,7 +1915,7 @@ useful right now.
 This trips up nearly everyone the first time. We just produced 4 rows of logits, one per input
 word. Why keep only one?
 
-Because of the causal mask from A7. Row 2 was built from a hidden state that could only see "the
+Because of the causal mask from 2.8. Row 2 was built from a hidden state that could only see "the
 cat" — so it is a prediction of the *third* word. We already know the third word. The same goes
 for rows 1 and 3. Only row 4, which has seen the whole prompt, predicts something we do not
 already have.
@@ -1951,7 +1927,7 @@ sentence yields 4 separate learning signals from a single pass. That technique i
 
 All four rows were computed, but for generating the next token we use **only row t4**.
 
-Row `i` predicts what follows tokens `1…i`. That is what the causal mask in A7 guaranteed —
+Row `i` predicts what follows tokens `1…i`. That is what the causal mask in 2.8 guaranteed —
 row t2 saw only "the cat", so its distribution is a prediction of the third token, which we
 already know is "sat".
 
@@ -1967,7 +1943,7 @@ already know is "sat".
 
 ---
 
-## P3 — Softmax over the vocabulary
+## 4.3 — Softmax over the vocabulary
 
 **In plain English:** turn the vocabulary scores into a proper probability distribution.
 
@@ -1976,7 +1952,7 @@ as always, and the output is what a language model fundamentally produces: a pro
 every word it knows, summing to 1.
 
 **Formula:** `p_v = exp(z_v) / Σ_u exp(z_u)`. Note the axis has changed for the third time in
-this document — A8 normalized over *keys*, M3 over *experts*, and here we normalize over the
+this document — 2.9 normalized over *keys*, 3.5 over *experts*, and here we normalize over the
 *vocabulary*. Same function, entirely different meaning each time.
 
 ```
@@ -2018,7 +1994,7 @@ in the differences, which is why logits are the natural space to manipulate in t
 
 ---
 
-## P4 — Sampling
+## 4.4 — Sampling
 
 **In plain English:** actually choose a word from the distribution.
 
@@ -2063,7 +2039,7 @@ automatically — unlike top-k, which uses the same fixed count either way.
 
 ---
 
-## P5 — Append and repeat: the KV cache
+## 4.5 — Append and repeat: the KV cache
 
 **In plain English:** stick the new word on the end and run again — but skip almost all the work
 the second time.
@@ -2091,7 +2067,7 @@ at positions `m = 0…4`. Now run the whole model again — but almost none of i
 | Score row for position 4 | 1 × 5 | yes |
 | MoE routing for position 4 | 1 token | yes |
 
-Rows 0–3 of `K` and `V` are **provably identical** to what we computed in A3 — the causal mask
+Rows 0–3 of `K` and `V` are **provably identical** to what we computed in 2.4 — the causal mask
 means no earlier position ever depends on a later one, so appending a token cannot change them.
 Caching them turns generation from `O(T²)` work per token into `O(T)`.
 
@@ -2112,285 +2088,19 @@ This splits inference into two regimes with very different bottlenecks:
 - **Decode** — one token at a time. Tiny matrices, **memory-bandwidth-bound**: the model reads
   gigabytes of weights to produce a single token.
 
-**This is exactly where MoE pays off, and exactly where it hurts.** During decode a dense 47B
-model must stream all 47B parameters per token. Mixtral streams only the ~13B its router
-selected — a ~3.6× bandwidth saving on the operation that dominates generation latency. But at
-batch size 1 a *single* token activates only 2 of 8 experts, so the other 6 sit in VRAM doing
+**This is exactly where MoE pays off, and exactly where it hurts.** During decode a dense 671B
+model must stream all 671B parameters per token. DeepSeek-V3 streams only the ~37B its router
+selected — an ~18× bandwidth saving on the operation that dominates generation latency. But at
+batch size 1 a *single* token activates only 8 of its 256 routed experts, so the rest sit in VRAM doing
 nothing: you pay full memory cost for a fraction of the compute. MoE is a much better deal at
 large batch, where the union of many tokens' choices keeps every expert busy.
 
-Loop back to A1 with the extended sequence and repeat until `"eos"` is sampled or a length
+Loop back to 2.2 with the extended sequence and repeat until `"eos"` is sampled or a length
 limit is hit.
 
-
----
 ---
 
----
----
-
-# What MoE buys you
-
-| | This toy layer | Mixtral 8×7B | DeepSeek-V3 |
-|---|---|---|---|
-| Experts / top-k | 4 / 2 | 8 / 2 | 256 + 1 shared / 8 |
-| Total params | 144 | ~46.7 B | ~671 B |
-| Active per token | 80 | ~12.9 B | ~37 B |
-| Active fraction | 55% | ~28% | ~5.5% |
-
-Our toy is a poor advertisement because `E` is tiny; the ratio improves as `E` grows with `k`
-fixed. Per-token FLOPs are `k · 2 · d_model · d_ff · 2` regardless of `E` — **you can grow
-knowledge capacity almost for free in compute terms.** What you pay instead:
-
-- **Memory.** All 144 params (all 671 B) must be resident even though only a slice is used. MoE
-  trades FLOPs for VRAM and bandwidth.
-- **Communication.** An `all-to-all` step must physically gather each expert's rows into one
-  contiguous buffer so it runs as a single dense GEMM. In distributed training experts live on
-  different GPUs, making this a network operation — usually the bottleneck.
-- **Instability.** Routing collapse, and dropped tokens (§13).
-
----
-
-# What real MoEs change
-
-**SwiGLU instead of ReLU.** Production MoEs use a gated FFN:
-`O = (SiLU(h·W_gate) ⊙ (h·W_up)) · W_down`, with `SiLU(z) = z·σ(z)`. Three matrices per expert,
-not two. For expert 0 / token 1 with `W_gate = W1[0]` and a plausible `W_up`:
-
-```
-  a          = [ 1.632993  -1.224745   0.816497   0.408248 ]
-  u          = [-0.408248   1.632993   0.408248   0.816497 ]
-  SiLU(a)    = [ 1.366116  -0.278093   0.566186   0.245177 ]
-  SiLU(a)⊙u  = [-0.557670  -0.454149   0.231164   0.200201 ]
-```
-
-Compare against ReLU's `[1.632993, 0, 0.816497, 0.408248]`. SiLU passes a small negative through
-instead of hard-zeroing — no dead experts like our expert 2.
-
-**Shared experts (DeepSeek-MoE).** One expert every token always uses, plus the top-k routed
-ones. Common patterns ("this is English", "attend to syntax") would otherwise be redundantly
-relearned inside every expert; isolating them frees the routed experts to specialize.
-Numerically it's just an extra term with gate 1.0 in the Step 7 sum.
-
-**Load balancing.** Routing has a positive feedback loop: an expert that gets more tokens trains
-faster, attracts higher logits, and gets even more, until the router collapses onto one or two
-experts and you've paid for a big model and got a small one. Classic fix is an auxiliary loss
-`L_aux = E · Σ_e f_e · P̄_e` (`f_e` = fraction of dispatch slots, `P̄_e` = mean router
-probability), minimized at 1.0 under perfect balance; for our `G` it evaluates to ~1.079, i.e.
-~8% imbalanced. DeepSeek-V3 instead adds a per-expert bias to the logits *for selection only*,
-nudged up or down by observed load — balance without a loss term fighting the main objective.
-
-**Expert-choice routing.** Invert the argmax: each expert picks its top-`C` tokens rather than
-each token picking its top-`k` experts. Perfect balance and zero drops by construction, but a
-token can receive zero experts and it isn't causal — so it's used for encoders and training, not
-autoregressive decoding.
-
----
-
-# Capacity and dropping
-
-GPU kernels need fixed-size buffers, so each expert gets a fixed capacity:
-
-```
-  capacity = ceil( (T · k / E) · capacity_factor )
-           = ceil( (4 · 2 / 4) · 1.0 )
-           = 2
-```
-
-Recall the column loads from `G`: expert 0 got **3** tokens, experts 1 and 3 got 2, expert 2 got
-1. Expert 0 is over by one.
-
-With `capacity_factor = 1.0`, the third token in sequence order — **t4** — is **dropped**. It
-skips expert 0 entirely and keeps only expert 1's contribution, un-renormalized:
-
-```
-  y₄ with drop = 0.5 · [1.25, 1.25, 1.75, 1.75]
-               = [0.625, 0.625, 0.875, 0.875]
-  X[4] + y₄    = [1.625, 1.625, 1.875, 1.875]
-
-  vs. without drop:
-  X[4] + y₄    = [2.375, 2.250, 2.000, 3.000]
-```
-
-A materially different vector — the token silently received half the FFN update it was routed
-for. Hence `capacity_factor` of 1.25–2.0 in practice, hence load balancing being non-optional,
-and hence "dropless" implementations (block-sparse kernels handling ragged expert batches, e.g.
-MegaBlocks).
-
----
-
-# Scaling to real Mixtral
-
-Everything above holds shape-for-shape at production scale. Only the numbers change:
-
-| | This walkthrough | Mixtral 8×7B |
-|---|---|---|
-| Blocks | 1 | 32 |
-| `d_model` | 4 | 4096 |
-| `d_ff` per expert | 4 | 14336 |
-| Attention heads | 2 | 32 query / 8 KV (GQA) |
-| `d_head` | 2 | 128 |
-| RoPE base | 1 | 1,000,000 |
-| Experts | 4 | 8 |
-| Top-k | 2 | 2 |
-| Vocabulary | 6 | 32000 |
-| Context | 4 | 32768 |
-| Total params | 144 | ~46.7 B |
-| Active per token | 80 | ~12.9 B |
-
-**Three differences worth naming:**
-
-**Grouped-query attention (GQA).** Mixtral uses 32 query heads but only 8 key/value heads —
-each KV head is shared by 4 query heads. This shrinks the KV cache 4×, which matters enormously
-at 32k context, where the cache can otherwise exceed the weights in size. The math of A6–A9 is
-unchanged; you just index into a shared `K`/`V` instead of a private one.
-
-**SwiGLU experts.** Each expert is `(SiLU(h·W_gate) ⊙ (h·W_up)) · W_down` — three matrices, not
-two, and no dead-ReLU pathology like our expert 2.
-
-**Every block has its own router.** With 32 blocks, a token is routed 32 times independently.
-Its expert path through the network is a *sequence* of 32 top-2 choices, not one. The number of
-distinct paths is astronomically large, which is a good intuition for where MoE's extra capacity
-actually lives.
-
-Router placement, gate renormalization, causal masking, RoPE, the residual structure, and the
-final unembedding are all **identical** to what you computed by hand above.
-
----
-
----
----
-
-# Glossary
-
-Every term this post uses, in one place.
-
-**Attention** — the mechanism letting each token read from other tokens. The only place in the
-model where positions communicate.
-
-**Attention head** — one independent copy of the attention machinery, operating on a slice of the
-vector. Multiple heads let the model track several relationships simultaneously.
-
-**Autoregressive** — generating one token at a time, each conditioned on everything before it.
-
-**Capacity factor** — how much headroom each expert's fixed-size buffer gets beyond its fair
-share. Below ~1.25 tokens start getting dropped.
-
-**Causal mask** — the triangular pattern of `−inf` values preventing a token from seeing tokens
-that come after it.
-
-**`d_ff`** — the width of an expert's internal hidden layer. Typically about 4× `d_model`.
-
-**`d_head`** — the width of one attention head. `n_heads × d_head = d_model`.
-
-**`d_model`** — the width of the residual stream. 4 here, 4096 in Mixtral. Fixed throughout the
-model.
-
-**Decode** — the generation phase, producing one token at a time. Bottlenecked by memory
-bandwidth, not arithmetic.
-
-**Dense model** — a conventional model where every parameter is used for every token. The
-opposite of sparse/MoE.
-
-**Dispatch** — physically gathering each expert's assigned tokens into one contiguous buffer so
-the expert can run as a single matrix multiply.
-
-**Dot product** — multiply two vectors position by position and sum. Large when the vectors point
-the same way; the model's universal similarity measure.
-
-**Dropping** — silently skipping a token that arrived at an expert already at capacity. It
-receives less processing than it was routed for.
-
-**Embedding** — the vector representing a token. Looked up from a table by token id.
-
-**Expert** — one FFN inside an MoE layer. Ordinary architecture; only its *selective use* is
-unusual.
-
-**FFN (feed-forward network)** — the two-layer network processing each token independently.
-Holds most of a transformer's parameters.
-
-**Gate** — the weight applied to an expert's output when blending, from the router's
-renormalized probability.
-
-**GQA (grouped-query attention)** — sharing each key/value head across several query heads.
-Shrinks the KV cache substantially.
-
-**Greedy decoding** — always taking the highest-probability token. Deterministic; prone to
-repetition.
-
-**Hidden state** — the vector representing a token at some point in the network.
-
-**KV cache** — stored keys and values from previous positions, reused during generation so
-earlier tokens are never recomputed.
-
-**LM head** — the final matrix mapping a hidden state to one score per vocabulary token. Also
-called the unembedding matrix.
-
-**Load balancing** — techniques keeping the router from collapsing onto a few favoured experts
-and leaving the rest idle.
-
-**Logit** — a raw, unnormalized score. Becomes a probability after softmax.
-
-**MoE (Mixture of Experts)** — replacing one FFN with several, plus a router selecting a few per
-token.
-
-**Nucleus sampling (top-p)** — restricting sampling to the smallest set of tokens whose
-probabilities reach `p`, then drawing from it.
-
-**Prefill** — processing the whole prompt in one pass before generation begins. Arithmetic-bound.
-
-**Pre-norm** — normalizing the input to each sub-layer while leaving the residual stream itself
-un-normalized. Standard in modern models.
-
-**ReLU** — an activation that replaces negatives with zero. Provides the nonlinearity in our
-experts.
-
-**Residual connection** — adding a sub-layer's output back onto its input rather than replacing
-it.
-
-**Residual stream** — the running vector per token that every sub-layer reads from and adds to.
-The model's shared workspace.
-
-**RMSNorm** — normalization dividing each vector by its root-mean-square. Equalizes magnitudes
-while preserving direction.
-
-**RoPE (rotary position embedding)** — encoding position by rotating query and key vectors by an
-angle proportional to position.
-
-**Router** — the small matrix scoring each token against each expert. The only genuinely new
-component in an MoE layer.
-
-**Scatter** — spreading an expert's compact output back into a full-height matrix with zeros
-where it was not involved.
-
-**Softmax** — converts any list of numbers into positive values summing to 1. Used three times
-here, over three different axes.
-
-**Sparsity** — using only a fraction of available parameters per token. The source of MoE's
-efficiency.
-
-**SwiGLU** — a gated FFN variant used in production models instead of ReLU. Avoids dead units.
-
-**Teacher forcing** — training on all positions at once, each against the token that actually
-followed. Yields `T` learning signals per sequence.
-
-**Temperature** — dividing logits before the softmax to sharpen (`<1`) or flatten (`>1`) the
-distribution.
-
-**Token** — the unit of text the model operates on. Usually a subword piece, not a whole word.
-
-**Top-k routing** — keeping only the `k` highest-scoring experts per token.
-
-**Transpose (`ᵀ`)** — flipping a matrix's rows and columns.
-
-**Unembedding** — see LM head.
-
-**Upcycling** — converting a trained dense model into an MoE by cloning its FFN and adding a
-router.
-
-**Vocabulary** — the full set of tokens a model knows. 6 here, 32,000 in Mixtral.
-
-# The whole model on one page
+# PART IV — The whole model on one page
 
 ```
   PART I — ATTENTION  (mixes information ACROSS positions)
@@ -2431,6 +2141,6 @@ router.
 
 Attention is the only place tokens talk to each other. The MoE is the only place the model
 consults its stored knowledge, and the only place it does so *selectively*. Everything above
-`dispatch` in Part II costs `d_model × E` FLOPs per token — essentially nothing. Everything
+`dispatch` in Part 3 costs `d_model × E` FLOPs per token — essentially nothing. Everything
 below costs `k` experts' worth. That asymmetry — a nearly-free decision unlocking a
 nearly-free-to-scale parameter store — is the whole architecture.

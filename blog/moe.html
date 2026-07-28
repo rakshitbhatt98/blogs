@@ -1,28 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How a Mixture-of-Experts Model Actually Works — The Forward Pass</title>
-  <meta name="description" content="An intuitive and comprehensive numerical walkthrough explaining each step in the forward pass of a Mixture of Experts Transformer Model.">
+  <title>The Anatomy of Mixture of Experts Transformer — The Forward Pass</title>
+  <meta name="description"
+    content="An intuitive and comprehensive numerical walkthrough explaining each step in the forward pass of a Mixture of Experts Transformer Model.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-      --color-bg:      #161826;
-      --color-surface: #232532;
-      --color-text:    #e9e9ed;
-      --color-accent:  #9184d9;
-      --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
-      --font-heading:  "Inter", system-ui, sans-serif;
-      --font-body:     "Inter", system-ui, sans-serif;
-      --font-mono:     "JetBrains Mono", ui-monospace, Menlo, monospace;
-      --radius-md:     8px;
+      --color-bg: #fcfbf9;
+      --color-surface: #f1efea;
+      --color-text: #1c1b22;
+      --color-accent: #5f52c4;
+      --color-divider: color-mix(in srgb, #1c1b22 13%, transparent);
+      --font-heading: "Inter", system-ui, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --radius-md: 8px;
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       margin: 0;
       background: var(--color-bg);
@@ -30,134 +42,278 @@
       font-family: var(--font-body);
       -webkit-font-smoothing: antialiased;
     }
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-text) 14%, transparent); border-radius: 8px; }
-    ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--color-text) 24%, transparent); }
-    ::-webkit-scrollbar-track { background: transparent; }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--color-text) 14%, transparent);
+      border-radius: 8px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: color-mix(in srgb, var(--color-text) 24%, transparent);
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
 
     /* ── Reading progress ── */
     #reading-progress {
-      position: fixed; top: 0; left: 0; height: 2px; width: 0;
-      background: var(--color-accent); z-index: 60;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      width: 0;
+      background: var(--color-accent);
+      z-index: 60;
       box-shadow: 0 0 8px color-mix(in srgb, var(--color-accent) 60%, transparent);
       transition: width 80ms linear;
     }
 
     /* ── Nav ── */
     nav {
-      position: sticky; top: 0; z-index: 50;
-      display: flex; align-items: center; gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 16px;
       padding: 14px 24px;
       background: color-mix(in srgb, var(--color-bg) 80%, transparent);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--color-divider);
     }
+
     .nav-brand {
-      font-family: var(--font-heading); font-weight: 500; font-size: 16px;
-      letter-spacing: -0.01em; color: var(--color-text); text-decoration: none;
+      font-family: var(--font-heading);
+      font-weight: 500;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+      color: var(--color-text);
+      text-decoration: none;
       margin-right: auto;
     }
+
     .nav-back {
-      font-size: 13px; color: color-mix(in srgb, var(--color-text) 60%, transparent);
-      text-decoration: none; transition: color .18s;
+      font-size: 13px;
+      color: color-mix(in srgb, var(--color-text) 60%, transparent);
+      text-decoration: none;
+      transition: color .18s;
     }
-    .nav-back:hover { color: var(--color-accent); }
+
+    .nav-back:hover {
+      color: var(--color-accent);
+    }
 
     /* ── Layout ── */
     .shell {
-      max-width: 900px; margin: 0 auto; padding: 0 32px;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 0 32px;
     }
 
-    main { min-width: 0; padding: 0 0 8rem; }
+    main {
+      min-width: 0;
+      padding: 0 0 8rem;
+    }
+
     /* Text and matrix boxes share the same column edges. */
 
     /* ── Post header ── */
-    .post-head { padding: 64px 0 8px; }
-    .head-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
-    .head-meta .sub-note { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+    .post-head {
+      padding: 64px 0 8px;
+    }
+
+    .head-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .head-meta .sub-note {
+      font-size: 12.5px;
+      color: color-mix(in srgb, var(--color-text) 45%, transparent);
+    }
+
     .tag {
-      display: inline-flex; align-items: center; font-size: 11px;
-      letter-spacing: 0.02em; padding: 3px 10px;
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      padding: 3px 10px;
       border-radius: calc(var(--radius-md) * 0.75);
     }
-    .tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
+
+    .tag-outline {
+      border: 1px solid var(--color-accent);
+      color: var(--color-accent);
+    }
 
     .post-head h1 {
-      font-family: var(--font-heading); font-size: 46px; font-weight: 500;
-      line-height: 1.08; letter-spacing: -0.028em; margin: 0 0 18px; text-wrap: balance;
+      font-family: var(--font-heading);
+      font-size: 46px;
+      font-weight: 500;
+      line-height: 1.08;
+      letter-spacing: -0.028em;
+      margin: 0 0 18px;
+      text-wrap: balance;
     }
+
     .post-sub {
-      font-size: 20px; line-height: 1.45; font-weight: 400;
+      font-size: 20px;
+      line-height: 1.45;
+      font-weight: 400;
       color: color-mix(in srgb, var(--color-text) 62%, transparent);
-      margin: 0 0 26px; text-wrap: pretty;
+      margin: 0 0 26px;
+      text-wrap: pretty;
     }
+
     .post-facts {
-      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-      font-size: 13px; color: color-mix(in srgb, var(--color-text) 48%, transparent);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: color-mix(in srgb, var(--color-text) 48%, transparent);
     }
-    .post-facts .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
-    .head-rule { height: 1px; border: 0; margin: 34px 0 8px; background: linear-gradient(to right, var(--color-divider), transparent); }
+
+    .post-facts .dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .head-rule {
+      height: 1px;
+      border: 0;
+      margin: 34px 0 8px;
+      background: linear-gradient(to right, var(--color-divider), transparent);
+    }
 
     /* ═══════════ PROSE ═══════════ */
-    #article { font-size: 16px; }
+    #article {
+      font-size: 16px;
+    }
 
     #article p {
-      margin: 0 0 1.15rem; font-size: 16px; line-height: 1.72;
-      color: color-mix(in srgb, var(--color-text) 82%, transparent); text-wrap: pretty;
+      margin: 0 0 1.15rem;
+      font-size: 16px;
+      line-height: 1.72;
+      color: color-mix(in srgb, var(--color-text) 82%, transparent);
+      text-wrap: pretty;
     }
-    #article strong { color: var(--color-text); font-weight: 600; }
-    #article em { color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+
+    #article strong {
+      color: var(--color-text);
+      font-weight: 600;
+    }
+
+    #article em {
+      color: color-mix(in srgb, var(--color-text) 70%, transparent);
+    }
+
     #article a {
-      color: var(--color-accent); text-decoration: none;
+      color: var(--color-accent);
+      text-decoration: none;
       border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
-      text-underline-offset: 3px; transition: border-color .15s;
+      text-underline-offset: 3px;
+      transition: border-color .15s;
     }
-    #article a:hover { border-bottom-color: var(--color-accent); }
+
+    #article a:hover {
+      border-bottom-color: var(--color-accent);
+    }
 
     /* Headings */
     #article h1 {
-      font-family: var(--font-heading); font-size: 31px; font-weight: 600;
-      line-height: 1.14; letter-spacing: -0.022em;
-      margin: 4.2rem 0 1.4rem; padding-bottom: 1rem;
+      font-family: var(--font-heading);
+      font-size: 31px;
+      font-weight: 600;
+      line-height: 1.14;
+      letter-spacing: -0.022em;
+      margin: 4.2rem 0 1.4rem;
+      padding-bottom: 1rem;
       border-bottom: 1px solid var(--color-divider);
-      scroll-margin-top: 78px; text-wrap: balance;
+      scroll-margin-top: 78px;
+      text-wrap: balance;
     }
-    #article h1:first-child { margin-top: .5rem; }
+
+    #article h1:first-child {
+      margin-top: .5rem;
+    }
+
     #article h1 .part-kicker {
-      display: block; font-family: var(--font-mono); font-size: 12px; font-weight: 500;
-      letter-spacing: 0.22em; text-transform: uppercase;
-      color: var(--color-accent); margin-bottom: 12px;
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 12px;
     }
+
     #article h1 .part-title {
-      display: block; font-size: 25px; font-weight: 600; letter-spacing: -0.015em;
+      display: block;
+      font-size: 25px;
+      font-weight: 600;
+      letter-spacing: -0.015em;
       color: var(--color-text);
       text-transform: none;
     }
 
     #article h2 {
-      font-family: var(--font-heading); font-size: 21px; font-weight: 600;
-      line-height: 1.28; letter-spacing: -0.015em;
-      margin: 2.8rem 0 1rem; scroll-margin-top: 78px; text-wrap: balance;
-      display: flex; align-items: baseline; gap: 12px;
+      font-family: var(--font-heading);
+      font-size: 21px;
+      font-weight: 600;
+      line-height: 1.28;
+      letter-spacing: -0.015em;
+      margin: 2.8rem 0 1rem;
+      scroll-margin-top: 78px;
+      text-wrap: balance;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
     }
+
     #article h3 {
-      font-family: var(--font-heading); font-size: 17px; font-weight: 600;
-      line-height: 1.3; letter-spacing: -0.01em;
+      font-family: var(--font-heading);
+      font-size: 17px;
+      font-weight: 600;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
       color: color-mix(in srgb, var(--color-text) 92%, transparent);
-      margin: 2rem 0 .7rem; scroll-margin-top: 78px;
-      display: flex; align-items: baseline; gap: 10px;
+      margin: 2rem 0 .7rem;
+      scroll-margin-top: 78px;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
     }
+
     #article h4 {
-      font-family: var(--font-heading); font-size: 15.5px; font-weight: 600;
+      font-family: var(--font-heading);
+      font-size: 15.5px;
+      font-weight: 600;
       color: color-mix(in srgb, var(--color-text) 82%, transparent);
-      margin: 1.6rem 0 .6rem; scroll-margin-top: 78px;
+      margin: 1.6rem 0 .6rem;
+      scroll-margin-top: 78px;
     }
 
     /* Step badge on section headings (A1, M2, P3, 0.4 …) */
     .h-badge {
       flex: none;
-      font-family: var(--font-mono); font-weight: 500;
-      letter-spacing: 0.01em; line-height: 1;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      line-height: 1;
       color: var(--color-accent);
       background: color-mix(in srgb, var(--color-accent) 13%, transparent);
       border: 1px solid color-mix(in srgb, var(--color-accent) 32%, transparent);
@@ -165,317 +321,423 @@
       padding: 5px 8px;
       align-self: center;
     }
-    #article h2 .h-badge { font-size: 12px; }
-    #article h3 .h-badge { font-size: 11px; padding: 4px 7px; }
+
+    #article h2 .h-badge {
+      font-size: 12px;
+    }
+
+    #article h3 .h-badge {
+      font-size: 11px;
+      padding: 4px 7px;
+    }
 
     /* Blockquote */
     #article blockquote {
-      margin: 1.8rem 0; padding: 1rem 1.4rem;
+      margin: 1.8rem 0;
+      padding: 1rem 1.4rem;
       border-left: 2px solid var(--color-accent);
       background: color-mix(in srgb, var(--color-accent) 6%, transparent);
       border-radius: 0 var(--radius-md) var(--radius-md) 0;
     }
+
     #article blockquote p {
-      margin: 0; font-size: 15px;
+      margin: 0;
+      font-size: 15px;
       color: color-mix(in srgb, var(--color-text) 72%, transparent);
     }
-    #article blockquote p + p { margin-top: .7rem; }
+
+    #article blockquote p+p {
+      margin-top: .7rem;
+    }
 
     /* Inline code */
-    #article :not(pre) > code {
-      font-family: var(--font-mono); font-size: 0.84em;
+    #article :not(pre)>code {
+      font-family: var(--font-mono);
+      font-size: 0.84em;
       background: color-mix(in srgb, var(--color-text) 8%, transparent);
       color: color-mix(in srgb, var(--color-accent) 88%, var(--color-text));
-      padding: .12em .38em; border-radius: 4px;
+      padding: .12em .38em;
+      border-radius: 4px;
     }
 
     /* Code blocks */
     #article pre {
-      background: color-mix(in srgb, #000 22%, var(--color-surface));
-      border: 1px solid var(--color-divider);
+      background: transparent;
+      border: 1px solid color-mix(in srgb, var(--color-text) 62%, transparent);
       border-radius: var(--radius-md);
-      padding: 1.2rem 1.4rem; margin: 1.6rem 0; overflow-x: auto;
+      padding: 1.2rem 1.4rem;
+      margin: 1.6rem 0;
+      overflow-x: auto;
       scrollbar-width: thin;
     }
+
     #article pre code {
-      font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.6;
       color: color-mix(in srgb, var(--color-text) 84%, transparent);
-      background: none; padding: 0; white-space: pre;
+      background: none;
+      padding: 0;
+      white-space: pre;
     }
+
     /* ASCII / box-drawing diagrams need tight leading so the rules connect */
     #article pre.diagram {
-      background: color-mix(in srgb, var(--color-accent) 5%, var(--color-surface));
+      background: transparent;
     }
+
     #article pre.diagram code {
-      line-height: 1.15; font-size: 13px;
+      line-height: 1.15;
+      font-size: 13px;
       color: color-mix(in srgb, var(--color-text) 90%, transparent);
     }
 
     /* Tables */
     #article table {
-      width: 100%; border-collapse: collapse; font-size: 14px;
-      margin: 1.8rem 0; display: block; overflow-x: auto; scrollbar-width: thin;
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 1.8rem 0;
+      display: block;
+      overflow-x: auto;
+      scrollbar-width: thin;
     }
+
     #article th {
-      text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      text-align: left;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       color: color-mix(in srgb, var(--color-text) 60%, transparent);
-      padding: 8px 12px; white-space: nowrap;
+      padding: 8px 12px;
+      white-space: nowrap;
       border-bottom: 1px solid var(--color-divider);
     }
+
     #article td {
-      font-family: var(--font-mono); font-size: 12.5px;
-      padding: 8px 12px; white-space: nowrap;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      padding: 8px 12px;
+      white-space: nowrap;
       color: color-mix(in srgb, var(--color-text) 74%, transparent);
       border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
     }
-    #article tbody tr:hover td { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
+
+    #article tbody tr:hover td {
+      background: color-mix(in srgb, var(--color-text) 4%, transparent);
+    }
 
     /* Lists */
-    #article ul, #article ol { margin: 0 0 1.25rem; padding-left: 1.35rem; }
+    #article ul,
+    #article ol {
+      margin: 0 0 1.25rem;
+      padding-left: 1.35rem;
+    }
+
     #article li {
-      margin: .45rem 0; font-size: 16px; line-height: 1.68;
+      margin: .45rem 0;
+      font-size: 16px;
+      line-height: 1.68;
       color: color-mix(in srgb, var(--color-text) 82%, transparent);
     }
 
     /* HR */
     #article hr {
-      height: 1px; border: 0; margin: 2.2rem 0;
+      height: 1px;
+      border: 0;
+      margin: 2.2rem 0;
       background: linear-gradient(to right, transparent, var(--color-divider) 48px, var(--color-divider) calc(100% - 48px), transparent);
     }
 
-    .loading { font-family: var(--font-mono); font-size: 13px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+    .loading {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: color-mix(in srgb, var(--color-text) 45%, transparent);
+    }
 
     /* ── Inline (upfront) TOC ── */
     .toc-inline {
-      margin: 0 0 3rem;
-      padding: 1.9rem 2rem 2rem;
-      border: 1px solid var(--color-divider);
-      border-radius: var(--radius-md);
-      background: color-mix(in srgb, var(--color-text) 2.5%, transparent);
+      margin: .25rem 0 3.5rem;
+      padding: 0;
     }
+
     .toc-inline-label {
-      font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase;
-      color: color-mix(in srgb, var(--color-text) 46%, transparent);
-      margin-bottom: 1.4rem;
+      font-size: 11px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--color-text) 42%, transparent);
+      padding-bottom: .9rem;
+      margin-bottom: .4rem;
+      border-bottom: 1px solid var(--color-divider);
     }
+
     .toc-line {
-      display: grid; grid-template-columns: 62px 1fr; align-items: baseline;
-      column-gap: 16px; text-decoration: none; padding: 7px 0;
+      display: grid;
+      grid-template-columns: 66px 1fr;
+      align-items: baseline;
+      column-gap: 18px;
+      text-decoration: none;
+      padding: 11px 10px;
+      margin: 0 -10px;
+      border-radius: 7px;
+      transition: background .15s;
     }
-    .toc-line + .toc-line { border-top: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); }
-    .toc-line.tail { grid-template-columns: 62px 1fr; }
+
+    .toc-line:hover {
+      background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+    }
+
     .toc-num {
-      font-family: var(--font-mono); font-size: 11.5px; font-weight: 500;
-      letter-spacing: 0.02em; text-align: left;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      text-align: left;
       color: var(--color-accent);
     }
+
     .toc-title-text {
-      font-size: 15px; line-height: 1.4;
-      color: color-mix(in srgb, var(--color-text) 82%, transparent);
+      font-size: 15.5px;
+      line-height: 1.4;
+      color: color-mix(in srgb, var(--color-text) 84%, transparent);
       transition: color .15s;
     }
-    .toc-line:hover .toc-title-text { color: var(--color-accent); }
-    .toc-line.tail .toc-title-text { font-size: 14px; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
-    .toc-divider { height: 1px; margin: .9rem 0; background: color-mix(in srgb, var(--color-text) 10%, transparent); }
+
+    .toc-line:hover .toc-title-text {
+      color: var(--color-accent);
+    }
 
     /* ── Post footer ── */
     .post-foot {
-      margin-top: 4rem; padding-top: 1.8rem;
+      margin-top: 4rem;
+      padding-top: 1.8rem;
       border-top: 1px solid var(--color-divider);
-      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
     }
-    .post-foot a { font-size: 13px; color: color-mix(in srgb, var(--color-text) 55%, transparent); text-decoration: none; }
-    .post-foot a:hover { color: var(--color-accent); }
+
+    .post-foot a {
+      font-size: 13px;
+      color: color-mix(in srgb, var(--color-text) 55%, transparent);
+      text-decoration: none;
+    }
+
+    .post-foot a:hover {
+      color: var(--color-accent);
+    }
 
     /* ── Responsive ── */
     @media (max-width: 560px) {
-      nav { padding: 12px 16px; }
-      .shell { padding: 0 16px; }
-      .post-head { padding: 40px 0 8px; }
-      .post-head h1 { font-size: 34px; }
-      .post-sub { font-size: 17px; }
+      nav {
+        padding: 12px 16px;
+      }
+
+      .shell {
+        padding: 0 16px;
+      }
+
+      .post-head {
+        padding: 40px 0 8px;
+      }
+
+      .post-head h1 {
+        font-size: 34px;
+      }
+
+      .post-sub {
+        font-size: 17px;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<div id="reading-progress"></div>
+  <div id="reading-progress"></div>
 
-<nav>
-  <a href="../index.html" class="nav-brand">The&nbsp;Forward&nbsp;Pass</a>
-  <a href="../index.html" class="nav-back">&larr;&nbsp;All&nbsp;posts</a>
-</nav>
+  <nav>
+    <a href="../index.html" class="nav-brand">The&nbsp;Forward&nbsp;Pass</a>
+    <a href="../index.html" class="nav-back">&larr;&nbsp;All&nbsp;posts</a>
+  </nav>
 
-<div class="shell">
-  <main>
-    <header class="post-head">
-      <div class="head-meta">
-        <span class="tag tag-outline">Numerical Walkthrough</span>
-        <span class="sub-note">Interpretability, from first principles</span>
+  <div class="shell">
+    <main>
+      <header class="post-head">
+        <div class="head-meta">
+          <span class="tag tag-outline">Numerical Walkthrough</span>
+          <span class="sub-note">Interpretability, from first principles</span>
+        </div>
+        <h1>The Anatomy of Mixture of Experts Transformer</h1>
+        <p class="post-sub">An intuitive and comprehensive numerical walkthrough explaining each step in the forward
+          pass of a Mixture of Experts Transformer Model.</p>
+        <div class="post-facts">
+          <span>July 2026</span>
+          <span class="dot"></span>
+          <span>~50 min read</span>
+          <span class="dot"></span>
+          <span>No hand-waving</span>
+        </div>
+        <hr class="head-rule">
+      </header>
+
+      <div id="article">
+        <p class="loading">Loading article…</p>
       </div>
-      <h1>How a Mixture-of-Experts Model Actually Works</h1>
-      <p class="post-sub">An intuitive and comprehensive numerical walkthrough explaining each step in the forward pass of a Mixture of Experts Transformer Model.</p>
-      <div class="post-facts">
-        <span>July 2026</span>
-        <span class="dot"></span>
-        <span>~50 min read</span>
-        <span class="dot"></span>
-        <span>No hand-waving</span>
+
+      <div class="post-foot">
+        <a href="../index.html">&larr; Back to all posts</a>
+        <a href="mailto:rakshit@galaxeye.space">rakshit@galaxeye.space</a>
       </div>
-      <hr class="head-rule">
-    </header>
+    </main>
+  </div>
 
-    <div id="article"><p class="loading">Loading article…</p></div>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    marked.use({ breaks: false, gfm: true });
 
-    <div class="post-foot">
-      <a href="../index.html">&larr; Back to all posts</a>
-      <a href="mailto:rakshit@galaxeye.space">rakshit@galaxeye.space</a>
-    </div>
-  </main>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script>
-  marked.use({ breaks: false, gfm: true });
-
-  fetch('moe.md')
-    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
-    .then(md => {
-      /* drop the leading H1 + the "### Every number" subtitle (both in the static header),
-         and the markdown's own Table-of-contents block (we regenerate it with working links) */
-      const cleaned = md
-        .replace(/^#\s[^\n]+\n+/, '')
-        .replace(/^###\s+Every number[^\n]*\n+/, '')
-        .replace(/##\s+Table of contents[\s\S]*?\n---\n/, '');
-      document.getElementById('article').innerHTML = marked.parse(cleaned);
-      decorateHeadings();
-      markDiagrams();
-      buildInlineTOC();
-      initProgress();
-    })
-    .catch(e => {
-      document.getElementById('article').innerHTML =
-        '<p style="color:#e0787f;font-family:var(--font-mono)">Could not load moe.md (' + e.message + ').</p>';
-    });
-
-  /* Sentence-case an ALL-CAPS title, restoring known acronyms. */
-  function niceTitle(s) {
-    const acr = { moe:'MoE', moes:'MoEs', ffn:'FFN', ffns:'FFNs', rmsnorm:'RMSNorm',
-      rope:'RoPE', kv:'KV', gqa:'GQA', swiglu:'SwiGLU', relu:'ReLU', silu:'SiLU',
-      lm:'LM', gpu:'GPU', mlp:'MLP' };
-    let t = s.toLowerCase();
-    t = t.charAt(0).toUpperCase() + t.slice(1);
-    return t.replace(/\b[a-z]+\b/gi, w => acr[w.toLowerCase()] || w);
-  }
-
-  /* Split "A1 — Tokenize and embed" into a badge + clean title.
-     Returns { badge, title } — badge is null when the heading has no step code. */
-  function parseHeading(text) {
-    const clean = text.replace(/^✅\s*/, '').trim();
-    // step codes: A0, A1, M0b, P3, 0.1, 0.5 …  followed by — . or -
-    const m = clean.match(/^([A-Z]?\d+(?:\.\d+)?[a-z]?)\s*[—.\-–]\s*(.+)$/);
-    if (m) return { badge: m[1], title: m[2].trim() };
-    return { badge: null, title: clean };
-  }
-
-  /* Give every heading an id, and reformat step / part headings. */
-  function decorateHeadings() {
-    const article = document.getElementById('article');
-    let partNum = 0;
-    article.querySelectorAll('h1, h2, h3, h4').forEach((h, i) => {
-      if (!h.id) h.id = 'sec-' + i;
-      h.dataset.raw = h.textContent;   // keep original text for the TOC
-
-      if (h.tagName === 'H1') {
-        // "PART I — ATTENTION: HOW WORDS READ EACH OTHER" → sequential "Part N"
-        const m = h.textContent.match(/^PART\s+\S+\s+[—–]\s+(.+)$/i);
-        if (m) {
-          partNum++;
-          h.dataset.part = partNum;
-          const title = niceTitle(m[1].trim());
-          h.innerHTML = '';
-          const k = document.createElement('span'); k.className = 'part-kicker'; k.textContent = 'Part ' + partNum;
-          const t = document.createElement('span'); t.className = 'part-title'; t.textContent = title;
-          h.append(k, t);
-        }
-        return;
-      }
-
-      if (h.tagName === 'H2' || h.tagName === 'H3') {
-        const { badge, title } = parseHeading(h.textContent);
-        if (badge) {
-          h.innerHTML = '';
-          const b = document.createElement('span'); b.className = 'h-badge'; b.textContent = badge;
-          const t = document.createElement('span'); t.className = 'h-text'; t.textContent = title;
-          h.append(b, t);
-        } else {
-          h.textContent = title; // strips the ✅ etc.
-        }
-      }
-    });
-  }
-
-  /* Tag code blocks that contain box-drawing art so they get tight leading.
-     Restricted to box glyphs (not → ← arrows, which also appear as matrix notes). */
-  function markDiagrams() {
-    const artRe = /[┌┐└┘│─├┤┬┴┼╭╮╰╯]/;
-    document.querySelectorAll('#article pre code').forEach(code => {
-      if (artRe.test(code.textContent)) code.parentElement.classList.add('diagram');
-    });
-  }
-
-  /* Upfront Contents card — main parts only (the H1 sections). */
-  function buildInlineTOC() {
-    const article = document.getElementById('article');
-    const hs = Array.from(article.querySelectorAll('h1'));
-    if (!hs.length) return;
-
-    const box = document.createElement('div');
-    box.className = 'toc-inline';
-    box.innerHTML = '<div class="toc-inline-label">Contents</div>';
-
-    let dividerPlaced = false;
-    hs.forEach(h => {
-      const raw = h.dataset.raw || h.textContent;
-      const partMatch = raw.match(/^PART\s+\S+\s+[—–]\s+(.+)$/i);
-
-      // Divider between the numbered parts and the trailing reference sections
-      if (!partMatch && !dividerPlaced && box.querySelector('.toc-line')) {
-        const d = document.createElement('div'); d.className = 'toc-divider';
-        box.appendChild(d); dividerPlaced = true;
-      }
-
-      const a = document.createElement('a');
-      a.className = 'toc-line' + (partMatch ? '' : ' tail');
-      a.href = '#' + h.id;
-
-      const num = document.createElement('span');
-      num.className = 'toc-num';
-      num.textContent = partMatch ? ('Part ' + (h.dataset.part || '')) : '';
-
-      const t = document.createElement('span');
-      t.className = 'toc-title-text';
-      t.textContent = partMatch ? niceTitle(partMatch[1].split(':')[0].trim()) : raw;
-
-      a.append(num, t);
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        document.getElementById(h.id).scrollIntoView({ behavior: 'smooth' });
+    fetch('moe.md')
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(md => {
+        /* drop the leading H1 + the "### Every number" subtitle (both in the static header),
+           and the markdown's own Table-of-contents block (we regenerate it with working links) */
+        const cleaned = md
+          .replace(/^#\s[^\n]+\n+/, '')
+          .replace(/^###\s+Every number[^\n]*\n+/, '')
+          .replace(/##\s+Table of contents[\s\S]*?\n---\n/, '');
+        document.getElementById('article').innerHTML = marked.parse(cleaned);
+        decorateHeadings();
+        markDiagrams();
+        buildInlineTOC();
+        initProgress();
+      })
+      .catch(e => {
+        document.getElementById('article').innerHTML =
+          '<p style="color:#e0787f;font-family:var(--font-mono)">Could not load moe.md (' + e.message + ').</p>';
       });
-      box.appendChild(a);
-    });
 
-    article.insertBefore(box, article.firstChild);
-  }
+    /* Sentence-case an ALL-CAPS title, restoring known acronyms. */
+    function niceTitle(s) {
+      const acr = {
+        moe: 'MoE', moes: 'MoEs', ffn: 'FFN', ffns: 'FFNs', rmsnorm: 'RMSNorm',
+        rope: 'RoPE', kv: 'KV', gqa: 'GQA', swiglu: 'SwiGLU', relu: 'ReLU', silu: 'SiLU',
+        lm: 'LM', gpu: 'GPU', mlp: 'MLP'
+      };
+      let t = s.toLowerCase();
+      t = t.charAt(0).toUpperCase() + t.slice(1);
+      return t.replace(/\b[a-z]+\b/gi, w => acr[w.toLowerCase()] || w);
+    }
 
-  function initProgress() {
-    const bar = document.getElementById('reading-progress');
-    window.addEventListener('scroll', () => {
-      const total = document.documentElement.scrollHeight - window.innerHeight;
-      bar.style.width = Math.min(100, (window.scrollY / total) * 100) + '%';
-    }, { passive: true });
-  }
-</script>
+    /* Split "A1 — Tokenize and embed" into a badge + clean title.
+       Returns { badge, title } — badge is null when the heading has no step code. */
+    function parseHeading(text) {
+      const clean = text.replace(/^✅\s*/, '').trim();
+      // step codes: A0, A1, M0b, P3, 0.1, 0.5 …  followed by — . or -
+      const m = clean.match(/^([A-Z]?\d+(?:\.\d+)?[a-z]?)\s*[—.\-–]\s*(.+)$/);
+      if (m) return { badge: m[1], title: m[2].trim() };
+      return { badge: null, title: clean };
+    }
+
+    /* Give every heading an id, and reformat step / part headings. */
+    function decorateHeadings() {
+      const article = document.getElementById('article');
+      let partNum = 0;
+      article.querySelectorAll('h1, h2, h3, h4').forEach((h, i) => {
+        if (!h.id) h.id = 'sec-' + i;
+        h.dataset.raw = h.textContent;   // keep original text for the TOC
+
+        if (h.tagName === 'H1') {
+          // "PART I — ATTENTION: HOW WORDS READ EACH OTHER" → sequential "Part N"
+          const m = h.textContent.match(/^PART\s+\S+\s+[—–]\s+(.+)$/i);
+          if (m) {
+            partNum++;
+            h.dataset.part = partNum;
+            const title = niceTitle(m[1].trim());
+            h.innerHTML = '';
+            const k = document.createElement('span'); k.className = 'part-kicker'; k.textContent = 'Part ' + partNum;
+            const t = document.createElement('span'); t.className = 'part-title'; t.textContent = title;
+            h.append(k, t);
+          }
+          return;
+        }
+
+        if (h.tagName === 'H2' || h.tagName === 'H3') {
+          const { badge, title } = parseHeading(h.textContent);
+          if (badge) {
+            h.innerHTML = '';
+            const b = document.createElement('span'); b.className = 'h-badge'; b.textContent = badge;
+            const t = document.createElement('span'); t.className = 'h-text'; t.textContent = title;
+            h.append(b, t);
+          } else {
+            h.textContent = title; // strips the ✅ etc.
+          }
+        }
+      });
+    }
+
+    /* Tag code blocks that contain box-drawing art so they get tight leading.
+       Restricted to box glyphs (not → ← arrows, which also appear as matrix notes). */
+    function markDiagrams() {
+      const artRe = /[┌┐└┘│─├┤┬┴┼╭╮╰╯]/;
+      document.querySelectorAll('#article pre code').forEach(code => {
+        if (artRe.test(code.textContent)) code.parentElement.classList.add('diagram');
+      });
+    }
+
+    /* Upfront Contents card — main parts only (the H1 sections). */
+    function buildInlineTOC() {
+      const article = document.getElementById('article');
+      const hs = Array.from(article.querySelectorAll('h1'));
+      if (!hs.length) return;
+
+      const box = document.createElement('div');
+      box.className = 'toc-inline';
+      box.innerHTML = '<div class="toc-inline-label">Contents</div>';
+
+      let dividerPlaced = false;
+      hs.forEach(h => {
+        const raw = h.dataset.raw || h.textContent;
+        const partMatch = raw.match(/^PART\s+\S+\s+[—–]\s+(.+)$/i);
+
+        // Divider between the numbered parts and the trailing reference sections
+        if (!partMatch && !dividerPlaced && box.querySelector('.toc-line')) {
+          const d = document.createElement('div'); d.className = 'toc-divider';
+          box.appendChild(d); dividerPlaced = true;
+        }
+
+        const a = document.createElement('a');
+        a.className = 'toc-line' + (partMatch ? '' : ' tail');
+        a.href = '#' + h.id;
+
+        const num = document.createElement('span');
+        num.className = 'toc-num';
+        num.textContent = partMatch ? ('Part ' + (h.dataset.part || '')) : '';
+
+        const t = document.createElement('span');
+        t.className = 'toc-title-text';
+        t.textContent = partMatch ? niceTitle(partMatch[1].split(':')[0].trim()) : raw;
+
+        a.append(num, t);
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          document.getElementById(h.id).scrollIntoView({ behavior: 'smooth' });
+        });
+        box.appendChild(a);
+      });
+
+      article.insertBefore(box, article.firstChild);
+    }
+
+    function initProgress() {
+      const bar = document.getElementById('reading-progress');
+      window.addEventListener('scroll', () => {
+        const total = document.documentElement.scrollHeight - window.innerHeight;
+        bar.style.width = Math.min(100, (window.scrollY / total) * 100) + '%';
+      }, { passive: true });
+    }
+  </script>
 
 </body>
+
 </html>
