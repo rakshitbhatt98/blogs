@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rakshit Bhatt — AI Systems Engineer</title>
+  <title>Rakshit Bhatt — Writing</title>
+  <meta name="description" content="Research notes and technical deep dives on AI systems by Rakshit Bhatt.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg:           #030309;
-      --bg2:          #08080f;
-      --card:         rgba(255,255,255,0.028);
-      --cyan:         #00d9ff;
-      --cyan-dim:     rgba(0,217,255,0.12);
-      --purple:       #8b5cf6;
-      --purple-dim:   rgba(139,92,246,0.12);
-      --green:        #00ff88;
-      --text:         #e2e8f0;
-      --muted:        #64748b;
-      --border:       rgba(0,217,255,0.11);
-      --border-h:     rgba(0,217,255,0.4);
+      --bg:       #0c0b10;
+      --bg-card:  #13121a;
+      --bg-hover: #181720;
+      --text:     #f0eee9;
+      --body:     #b8b5af;
+      --muted:    #6a6870;
+      --gold:     #d4a853;
+      --gold-dim: rgba(212,168,83,0.1);
+      --purple:   #8b78f5;
+      --border:   rgba(255,255,255,0.055);
+      --border-h: rgba(212,168,83,0.22);
     }
 
     html { scroll-behavior: smooth; }
@@ -29,725 +29,382 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 16px;
-      line-height: 1.65;
-      overflow-x: hidden;
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Canvas ── */
-    #bgc {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .wrap { position: relative; z-index: 1; }
-
-    /* ── Nav ── */
-    nav {
-      position: fixed;
-      inset: 0 0 auto 0;
-      z-index: 200;
+    /* ── Header ── */
+    header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1.1rem 3rem;
-      background: rgba(3,3,9,0.82);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.2rem 2.5rem;
       border-bottom: 1px solid var(--border);
     }
 
-    .logo {
-      font-family: 'Orbitron', monospace;
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--cyan);
+    .site-name {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-size: 1.4rem;
+      color: var(--text);
       text-decoration: none;
-      letter-spacing: .12em;
     }
-    .logo span { color: var(--muted); font-weight: 400; }
 
-    .nav-links {
-      display: flex;
-      gap: 2.5rem;
-      list-style: none;
-    }
-    .nav-links a {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .8rem;
-      letter-spacing: .12em;
-      text-transform: uppercase;
+    .site-nav { list-style: none; display: flex; gap: 2rem; }
+    .site-nav a {
+      font-size: 0.82rem;
       color: var(--muted);
       text-decoration: none;
-      transition: color .2s;
+      transition: color 0.18s;
     }
-    .nav-links a:hover { color: var(--cyan); }
+    .site-nav a:hover { color: var(--text); }
 
-    /* ── Sections ── */
-    .sec {
-      max-width: 1180px;
+    /* ── Intro ── */
+    .intro {
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 7rem 2.5rem;
+      padding: 5rem 2.5rem 3.8rem;
     }
 
-    .sec-tag {
+    .intro-label {
       font-family: 'JetBrains Mono', monospace;
-      font-size: .72rem;
-      color: var(--cyan);
-      letter-spacing: .22em;
+      font-size: 0.7rem;
+      color: var(--gold);
+      letter-spacing: 0.2em;
       text-transform: uppercase;
-      margin-bottom: .65rem;
-    }
-    .sec-h {
-      font-family: 'Orbitron', monospace;
-      font-size: clamp(1.7rem,3.5vw,2.4rem);
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.18;
-      margin-bottom: 2.8rem;
-    }
-
-    /* ── Hero ── */
-    #hero {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding-top: 80px;
-    }
-
-    .eyebrow {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .82rem;
-      color: var(--cyan);
-      letter-spacing: .22em;
-      text-transform: uppercase;
-      margin-bottom: 1.4rem;
-      opacity: .85;
-    }
-    .eyebrow::before { content: '> '; opacity: .45; }
-
-    .hero-name {
-      font-family: 'Orbitron', monospace;
-      font-size: clamp(3rem,8vw,5.8rem);
-      font-weight: 900;
-      line-height: 1.0;
-      letter-spacing: -.01em;
-      background: linear-gradient(140deg, #fff 0%, var(--cyan) 52%, var(--purple) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: .9rem;
-    }
-
-    .hero-sub {
-      font-size: 1.35rem;
-      color: var(--muted);
-      font-weight: 300;
-      margin-bottom: 1.8rem;
-    }
-    .hero-sub strong { color: var(--text); font-weight: 500; }
-
-    .typing-wrap {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.05rem;
-      color: var(--green);
-      height: 1.5em;
-      margin-bottom: 2.8rem;
-    }
-    .typing-wrap::after {
-      content: '█';
-      animation: blink 1s step-end infinite;
-    }
-    @keyframes blink { 50% { opacity: 0; } }
-
-    .cta-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: .5rem;
-      padding: .82rem 1.85rem;
-      border-radius: 5px;
-      font-size: .82rem;
-      font-weight: 500;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      text-decoration: none;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: all .22s;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .btn-p { background: var(--cyan); color: var(--bg); border-color: var(--cyan); }
-    .btn-p:hover { background: transparent; color: var(--cyan); box-shadow: 0 0 22px rgba(0,217,255,.32); }
-    .btn-s { background: transparent; color: var(--text); border-color: var(--border); }
-    .btn-s:hover { border-color: var(--cyan); color: var(--cyan); }
-
-    .hero-stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3rem;
-      margin-top: 4rem;
-      padding-top: 2.8rem;
-      border-top: 1px solid var(--border);
-    }
-    .stat-val {
-      font-family: 'Orbitron', monospace;
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--cyan);
-      line-height: 1;
-    }
-    .stat-lbl {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .7rem;
-      color: var(--muted);
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      margin-top: .35rem;
-    }
-
-    /* ── About ── */
-    #about {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5rem;
-      align-items: start;
-    }
-    .about-body p {
-      color: var(--muted);
       margin-bottom: 1rem;
-      line-height: 1.85;
-    }
-    .about-body p strong { color: var(--text); }
-    .about-body { margin-top: .5rem; }
-
-    .skills { display: flex; flex-direction: column; gap: 1.1rem; }
-    .sk { display: flex; flex-direction: column; gap: .38rem; }
-    .sk-row {
-      display: flex;
-      justify-content: space-between;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .78rem;
-    }
-    .sk-name { color: var(--text); }
-    .sk-pct { color: var(--cyan); }
-    .sk-track {
-      height: 2px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .sk-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--cyan), var(--purple));
-      border-radius: 2px;
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 1.4s cubic-bezier(.16,1,.3,1);
-    }
-    .sk-fill.on { transform: scaleX(1); }
-
-    /* ── Projects ── */
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-      gap: 1.5rem;
     }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 1.85rem;
-      position: relative;
-      overflow: hidden;
-      transition: border-color .25s, box-shadow .25s, transform .25s, background .25s;
-    }
-    .card::before {
-      content: '';
-      position: absolute;
-      inset: 0 0 auto 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--cyan), var(--purple));
-      opacity: 0;
-      transition: opacity .25s;
-    }
-    .card:hover {
-      border-color: var(--border-h);
-      background: rgba(0,217,255,.025);
-      box-shadow: 0 0 38px rgba(0,217,255,.09);
-      transform: translateY(-3px);
-    }
-    .card:hover::before { opacity: 1; }
-
-    .card-gen {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .68rem;
-      color: var(--cyan);
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      opacity: .65;
-      margin-bottom: .6rem;
-    }
-    .card-name {
-      font-family: 'Orbitron', monospace;
-      font-size: 1.2rem;
-      font-weight: 700;
+    .intro-headline {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-size: clamp(1.9rem, 3.5vw, 2.65rem);
       color: var(--text);
-      letter-spacing: .06em;
-      margin-bottom: .3rem;
+      line-height: 1.28;
+      max-width: 660px;
+      letter-spacing: -0.015em;
     }
-    .card-role {
-      font-size: .78rem;
-      color: var(--cyan);
-      font-weight: 500;
-      margin-bottom: .9rem;
+
+    /* ── Posts ── */
+    .posts-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2.5rem 8rem;
     }
-    .card-desc {
-      font-size: .855rem;
+
+    .section-row {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
       color: var(--muted);
-      line-height: 1.75;
-      margin-bottom: 1.4rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding-bottom: 1.2rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
     }
-    .tags { display: flex; flex-wrap: wrap; gap: .45rem; }
-    .tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .68rem;
-      padding: .22rem .58rem;
-      border-radius: 3px;
-      background: var(--cyan-dim);
-      color: var(--cyan);
-      border: 1px solid rgba(0,217,255,.18);
-    }
-    .tag.v { background: var(--purple-dim); color: var(--purple); border-color: rgba(139,92,246,.2); }
 
-    /* ── Blog ── */
-    .blog-grid {
+    /* ── Featured card ── */
+    .feat {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 2rem;
-    }
-    .bcard {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 2rem;
-      text-decoration: none;
-      display: block;
-      transition: all .25s;
-      position: relative;
-      overflow: hidden;
-    }
-    .bcard::before {
-      content: '';
-      position: absolute;
-      inset: 0 0 auto 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--green), var(--cyan));
-      opacity: 0;
-      transition: opacity .25s;
-    }
-    .bcard:hover { border-color: rgba(0,255,136,.35); background: rgba(0,255,136,.018); box-shadow: 0 0 38px rgba(0,255,136,.07); transform: translateY(-3px); }
-    .bcard:hover::before { opacity: 1; }
-
-    .bmeta { display: flex; gap: .85rem; align-items: center; margin-bottom: .9rem; }
-    .bdate { font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: var(--muted); }
-    .bbadge {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .65rem;
-      padding: .18rem .5rem;
-      background: rgba(0,255,136,.1);
-      color: var(--green);
-      border-radius: 3px;
-      border: 1px solid rgba(0,255,136,.22);
-    }
-    .btitle {
-      font-size: 1.15rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: .65rem;
-      line-height: 1.45;
-    }
-    .bexcerpt { font-size: .855rem; color: var(--muted); line-height: 1.75; margin-bottom: 1.4rem; }
-    .bmore {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .78rem;
-      color: var(--cyan);
-      display: flex;
-      align-items: center;
-      gap: .45rem;
-    }
-
-    /* ── Contact ── */
-    #contact {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    .cbox {
-      background: var(--card);
+      grid-template-columns: 1fr 360px;
+      background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 2.8rem;
-      max-width: 580px;
-      width: 100%;
-      margin-top: 2rem;
-    }
-    .cbox p { color: var(--muted); margin-bottom: 1.2rem; line-height: 1.8; }
-    .cemail {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.05rem;
-      color: var(--cyan);
+      overflow: hidden;
       text-decoration: none;
-      display: block;
-      margin: 1.4rem 0;
-      transition: text-shadow .2s;
+      transition: border-color 0.24s, background 0.24s, box-shadow 0.24s;
+      margin-bottom: 3rem;
     }
-    .cemail:hover { text-shadow: 0 0 22px rgba(0,217,255,.55); }
+
+    .feat:hover {
+      border-color: var(--border-h);
+      background: var(--bg-hover);
+      box-shadow: 0 10px 50px rgba(0,0,0,0.45);
+    }
+
+    .feat-body {
+      padding: 2.8rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+    }
+
+    .tags { display: flex; gap: 0.5rem; }
+
+    .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.66rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.26rem 0.6rem;
+      border-radius: 3px;
+      background: var(--gold-dim);
+      color: var(--gold);
+      border: 1px solid rgba(212,168,83,0.16);
+    }
+    .tag.muted {
+      background: rgba(255,255,255,0.035);
+      color: var(--muted);
+      border-color: var(--border);
+    }
+
+    .feat-title {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(1.5rem, 2.6vw, 2rem);
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.28;
+      letter-spacing: -0.01em;
+    }
+
+    .feat-excerpt {
+      font-size: 0.9rem;
+      color: var(--body);
+      line-height: 1.82;
+      max-width: 50ch;
+    }
+
+    .feat-footer {
+      display: flex;
+      align-items: center;
+      gap: 1.4rem;
+      margin-top: auto;
+    }
+
+    .meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .read-cta {
+      margin-left: auto;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: gap 0.18s;
+    }
+    .feat:hover .read-cta { gap: 0.55rem; }
+
+    /* ── Thumbnail ── */
+    .feat-visual {
+      background: #09080f;
+      border-left: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 300px;
+    }
+    .feat-visual svg { width: 100%; height: 100%; display: block; }
 
     /* ── Footer ── */
     footer {
       border-top: 1px solid var(--border);
-      padding: 1.8rem 3rem;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.8rem 2.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .72rem;
-      color: var(--muted);
     }
-    footer span.hi { color: var(--cyan); }
-
-    /* ── Fade-in ── */
-    .fi { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
-    .fi.on { opacity: 1; transform: translateY(0); }
+    footer, footer a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    footer a:hover { color: var(--gold); }
 
     /* ── Responsive ── */
-    @media (max-width: 768px) {
-      nav { padding: 1rem 1.5rem; }
-      .nav-links { display: none; }
-      .sec { padding: 5rem 1.5rem; }
-      #about { grid-template-columns: 1fr; gap: 3rem; }
-      .hero-stats { gap: 1.8rem; }
-      footer { flex-direction: column; gap: .5rem; text-align: center; }
+    @media (max-width: 820px) {
+      .feat { grid-template-columns: 1fr; }
+      .feat-visual { min-height: 200px; border-left: none; border-top: 1px solid var(--border); order: -1; }
+      .feat-body { padding: 2rem 1.8rem; }
+    }
+
+    @media (max-width: 560px) {
+      header, .intro, .posts-wrap, footer { padding-left: 1.3rem; padding-right: 1.3rem; }
+      .intro { padding-top: 3.2rem; padding-bottom: 2.8rem; }
+      footer { flex-direction: column; gap: 0.4rem; text-align: center; }
     }
   </style>
 </head>
 <body>
 
-<canvas id="bgc"></canvas>
+<header>
+  <a href="/" class="site-name">Rakshit Bhatt</a>
+  <ul class="site-nav">
+    <li><a href="mailto:rakshit@galaxeye.space">Contact</a></li>
+  </ul>
+</header>
 
-<div class="wrap">
+<div class="intro">
+  <div class="intro-label">Writing</div>
+  <p class="intro-headline">Research notes and deep dives on AI, machine learning, and the mathematics of modern systems.</p>
+</div>
 
-  <!-- NAV -->
-  <nav>
-    <a href="#" class="logo">RB<span>.exe</span></a>
-    <ul class="nav-links">
-      <li><a href="#about">About</a></li>
-      <li><a href="#projects">Systems</a></li>
-      <li><a href="#blog">Research</a></li>
-      <li><a href="#contact">Contact</a></li>
-    </ul>
-  </nav>
+<div class="posts-wrap">
+  <div class="section-row">All articles</div>
 
-  <!-- HERO -->
-  <section class="sec" id="hero">
-    <div class="eyebrow">AI/ML Systems Engineer — GalaxEye Space</div>
-    <h1 class="hero-name">Rakshit Bhatt</h1>
-    <p class="hero-sub">Building <strong>perception systems</strong> for the intelligence edge</p>
-    <div class="typing-wrap" id="typer"></div>
-    <div class="cta-row">
-      <a href="#projects" class="btn btn-p">View Systems</a>
-      <a href="blog/moe.html" class="btn btn-s">Read Research</a>
-    </div>
-    <div class="hero-stats">
-      <div>
-        <div class="stat-val">6</div>
-        <div class="stat-lbl">AI Modules</div>
+  <a href="blog/moe.html" class="feat">
+    <div class="feat-body">
+      <div class="tags">
+        <span class="tag">Machine Learning</span>
+        <span class="tag muted">Deep Dive</span>
       </div>
-      <div>
-        <div class="stat-val">0.3m</div>
-        <div class="stat-lbl">Resolution</div>
-      </div>
-      <div>
-        <div class="stat-val">16</div>
-        <div class="stat-lbl">Object Classes</div>
-      </div>
-      <div>
-        <div class="stat-val">SAR+EO</div>
-        <div class="stat-lbl">Modalities</div>
-      </div>
-    </div>
-  </section>
 
-  <!-- ABOUT -->
-  <section class="sec" id="about">
-    <div>
-      <div class="sec-tag">// Who I Am</div>
-      <h2 class="sec-h">Defense AI &amp;<br>Geospatial Intelligence</h2>
-      <div class="about-body">
-        <p>I engineer <strong>AI perception systems</strong> at GalaxEye Space, where satellite imagery meets deep learning for defense and intelligence applications.</p>
-        <p>My work spans the full stack: from <strong>SAR image simulation</strong> and <strong>EO/SAR co-registration</strong> to <strong>object detection</strong> and <strong>RAG-based intelligence chatbots</strong>, all targeting edge-deployable, airgapped environments.</p>
-        <p>I specialize in pushing model performance at <strong>0.3m–2m GSD</strong> across synthetic aperture radar and electro-optical imagery — the hardest regimes for perception AI.</p>
-      </div>
-      <div style="margin-top:2rem;">
-        <a href="mailto:rakshit@galaxeye.space" class="btn btn-p">Get in Touch</a>
+      <h2 class="feat-title">How a Mixture&#x2011;of&#x2011;Experts Model Actually Works</h2>
+
+      <p class="feat-excerpt">Every number, worked out by hand. A complete walkthrough of MoE architecture — from tokenisation through multi-head attention, expert routing, and FFN processing — using a toy model where every matrix fits on the page.</p>
+
+      <div class="feat-footer">
+        <span class="meta">July 2026</span>
+        <span class="meta">45 min read</span>
+        <span class="read-cta">Read article <span>→</span></span>
       </div>
     </div>
 
-    <div>
-      <div class="sec-tag">// Stack</div>
-      <div style="height:.65rem;"></div>
-      <div class="skills" id="skills-panel">
-        <div class="sk fi">
-          <div class="sk-row"><span class="sk-name">Computer Vision / Deep Learning</span><span class="sk-pct">95%</span></div>
-          <div class="sk-track"><div class="sk-fill" style="width:95%"></div></div>
-        </div>
-        <div class="sk fi">
-          <div class="sk-row"><span class="sk-name">SAR &amp; EO Image Processing</span><span class="sk-pct">92%</span></div>
-          <div class="sk-track"><div class="sk-fill" style="width:92%"></div></div>
-        </div>
-        <div class="sk fi">
-          <div class="sk-row"><span class="sk-name">RAG &amp; LLM Systems</span><span class="sk-pct">88%</span></div>
-          <div class="sk-track"><div class="sk-fill" style="width:88%"></div></div>
-        </div>
-        <div class="sk fi">
-          <div class="sk-row"><span class="sk-name">PyTorch / Python</span><span class="sk-pct">93%</span></div>
-          <div class="sk-track"><div class="sk-fill" style="width:93%"></div></div>
-        </div>
-        <div class="sk fi">
-          <div class="sk-row"><span class="sk-name">Airgapped / Edge Deployment</span><span class="sk-pct">85%</span></div>
-          <div class="sk-track"><div class="sk-fill" style="width:85%"></div></div>
-        </div>
-        <div class="sk fi">
-          <div class="sk-row"><span class="sk-name">3D SAR Simulation (RaySAR)</span><span class="sk-pct">76%</span></div>
-          <div class="sk-track"><div class="sk-fill" style="width:76%"></div></div>
-        </div>
-      </div>
+    <!-- Abstract MoE routing diagram -->
+    <div class="feat-visual">
+      <svg viewBox="0 0 360 300" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <radialGradient id="bg" cx="55%" cy="38%" r="65%">
+            <stop offset="0%" stop-color="#16112a"/>
+            <stop offset="100%" stop-color="#060510"/>
+          </radialGradient>
+          <filter id="gf" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3.5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="sgf" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect width="360" height="300" fill="url(#bg)"/>
+
+        <!-- subtle grid -->
+        <g stroke="rgba(255,255,255,0.032)" stroke-width="0.6">
+          <line x1="0" y1="75"  x2="360" y2="75"/>
+          <line x1="0" y1="150" x2="360" y2="150"/>
+          <line x1="0" y1="225" x2="360" y2="225"/>
+          <line x1="90"  y1="0" x2="90"  y2="300"/>
+          <line x1="180" y1="0" x2="180" y2="300"/>
+          <line x1="270" y1="0" x2="270" y2="300"/>
+        </g>
+
+        <!-- ── Token nodes (left col) ── -->
+        <g filter="url(#gf)">
+          <!-- t1 -->
+          <circle cx="55" cy="82"  r="11" fill="none" stroke="#d4a853" stroke-width="1.4" opacity="0.95"/>
+          <text x="55" y="86"  text-anchor="middle" font-family="monospace" font-size="8.5" fill="#d4a853" opacity="0.9">t1</text>
+          <!-- t2 -->
+          <circle cx="55" cy="126" r="11" fill="none" stroke="#d4a853" stroke-width="1.4" opacity="0.85"/>
+          <text x="55" y="130" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#d4a853" opacity="0.85">t2</text>
+          <!-- t3 -->
+          <circle cx="55" cy="172" r="11" fill="none" stroke="#d4a853" stroke-width="1.4" opacity="0.6"/>
+          <text x="55" y="176" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#d4a853" opacity="0.6">t3</text>
+          <!-- t4 -->
+          <circle cx="55" cy="218" r="11" fill="none" stroke="#d4a853" stroke-width="1.4" opacity="0.5"/>
+          <text x="55" y="222" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#d4a853" opacity="0.5">t4</text>
+        </g>
+
+        <!-- ── Dim background lines ── -->
+        <g stroke="rgba(255,255,255,0.055)" stroke-width="0.7" fill="none">
+          <line x1="66"  y1="82"  x2="174" y2="100"/>
+          <line x1="66"  y1="82"  x2="174" y2="136"/>
+          <line x1="66"  y1="82"  x2="174" y2="172"/>
+          <line x1="66"  y1="82"  x2="174" y2="208"/>
+          <line x1="66"  y1="126" x2="174" y2="100"/>
+          <line x1="66"  y1="126" x2="174" y2="136"/>
+          <line x1="66"  y1="126" x2="174" y2="172"/>
+          <line x1="66"  y1="126" x2="174" y2="208"/>
+          <line x1="66"  y1="172" x2="174" y2="100"/>
+          <line x1="66"  y1="172" x2="174" y2="136"/>
+          <line x1="66"  y1="172" x2="174" y2="172"/>
+          <line x1="66"  y1="172" x2="174" y2="208"/>
+          <line x1="66"  y1="218" x2="174" y2="100"/>
+          <line x1="66"  y1="218" x2="174" y2="136"/>
+          <line x1="66"  y1="218" x2="174" y2="172"/>
+          <line x1="66"  y1="218" x2="174" y2="208"/>
+        </g>
+
+        <!-- ── Active routing lines ── -->
+        <!-- t1 → E0, E3 (gold, purple) -->
+        <line x1="66" y1="82" x2="174" y2="100" stroke="#d4a853" stroke-width="1.5" opacity="0.9"/>
+        <line x1="66" y1="82" x2="174" y2="208" stroke="#8b78f5" stroke-width="1.3" opacity="0.75"/>
+        <!-- t2 → E1, E3 -->
+        <line x1="66" y1="126" x2="174" y2="136" stroke="#d4a853" stroke-width="1.5" opacity="0.85"/>
+        <line x1="66" y1="126" x2="174" y2="208" stroke="#8b78f5" stroke-width="1.2" opacity="0.65"/>
+        <!-- t3 → E2, E0 -->
+        <line x1="66" y1="172" x2="174" y2="172" stroke="#d4a853" stroke-width="1.3" opacity="0.72"/>
+        <line x1="66" y1="172" x2="174" y2="100" stroke="#8b78f5" stroke-width="1.1" opacity="0.55"/>
+        <!-- t4 → E0, E1 -->
+        <line x1="66" y1="218" x2="174" y2="100" stroke="#d4a853" stroke-width="1.2" opacity="0.6"/>
+        <line x1="66" y1="218" x2="174" y2="136" stroke="#8b78f5" stroke-width="1.1" opacity="0.5"/>
+
+        <!-- ── Router boxes (center) ── -->
+        <!-- Main router -->
+        <rect x="174" y="84" width="64" height="32" rx="5" fill="#11101e" stroke="#6366f1" stroke-width="1.1" opacity="0.95"/>
+        <text x="206" y="103" text-anchor="middle" font-family="monospace" font-size="8" fill="#8b78f5" opacity="0.9">Router</text>
+        <!-- Label below -->
+        <text x="206" y="130" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(255,255,255,0.2)">top-k = 2</text>
+
+        <!-- Outgoing active lines (router → experts) -->
+        <line x1="238" y1="100" x2="271" y2="100" stroke="#d4a853" stroke-width="1.4" opacity="0.85"/>
+        <line x1="238" y1="100" x2="271" y2="136" stroke="#d4a853" stroke-width="1.3" opacity="0.78"/>
+        <line x1="238" y1="100" x2="271" y2="172" stroke="#8b78f5" stroke-width="1.2" opacity="0.65"/>
+        <line x1="238" y1="100" x2="271" y2="208" stroke="#8b78f5" stroke-width="1.1" opacity="0.6"/>
+
+        <!-- ── Expert boxes (right col) ── -->
+        <!-- E0 active gold -->
+        <rect x="271" y="84"  width="70" height="28" rx="5" fill="#15111f" stroke="#d4a853" stroke-width="1.3" opacity="0.95"/>
+        <text x="306" y="101" text-anchor="middle" font-family="monospace" font-size="8" fill="#d4a853" opacity="0.92">Expert 0</text>
+        <!-- E1 active gold dim -->
+        <rect x="271" y="122" width="70" height="28" rx="5" fill="#14111e" stroke="#d4a853" stroke-width="1.1" opacity="0.82"/>
+        <text x="306" y="139" text-anchor="middle" font-family="monospace" font-size="8" fill="#d4a853" opacity="0.8">Expert 1</text>
+        <!-- E2 active purple -->
+        <rect x="271" y="158" width="70" height="28" rx="5" fill="#120f1e" stroke="#8b78f5" stroke-width="1.1" opacity="0.72"/>
+        <text x="306" y="175" text-anchor="middle" font-family="monospace" font-size="8" fill="#8b78f5" opacity="0.7">Expert 2</text>
+        <!-- E3 dim -->
+        <rect x="271" y="194" width="70" height="28" rx="5" fill="#0e0d14" stroke="rgba(255,255,255,0.09)" stroke-width="0.8" opacity="0.38"/>
+        <text x="306" y="211" text-anchor="middle" font-family="monospace" font-size="8" fill="#6a6870" opacity="0.38">Expert 3</text>
+
+        <!-- ── Glow dots at junctions ── -->
+        <circle cx="271" cy="98"  r="3.5" fill="#d4a853" opacity="0.55" filter="url(#sgf)"/>
+        <circle cx="271" cy="136" r="3"   fill="#d4a853" opacity="0.45" filter="url(#sgf)"/>
+        <circle cx="271" cy="172" r="3"   fill="#8b78f5" opacity="0.42" filter="url(#sgf)"/>
+
+        <!-- ── Background matrix hint ── -->
+        <g font-family="monospace" font-size="6.5" fill="rgba(212,168,83,0.08)" text-anchor="middle">
+          <text x="336" y="60">0.885</text>
+          <text x="316" y="50">0.114</text>
+          <text x="346" y="46">0.836</text>
+          <text x="330" y="256">0.256</text>
+          <text x="316" y="268">0.743</text>
+          <text x="346" y="260">0.500</text>
+        </g>
+
+        <!-- Label: sparsity annotation -->
+        <text x="206" y="258" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(255,255,255,0.15)">8 of 16 paths active</text>
+        <line x1="155" y1="254" x2="258" y2="254" stroke="rgba(255,255,255,0.08)" stroke-width="0.6"/>
+      </svg>
     </div>
-  </section>
+  </a>
 
-  <!-- PROJECTS -->
-  <section class="sec" id="projects">
-    <div class="sec-tag fi">// Deployed Systems</div>
-    <h2 class="sec-h fi">AI Modules</h2>
-    <div class="grid-3">
+</div>
 
-      <div class="card fi">
-        <div class="card-gen">Gen-1 → Gen-2</div>
-        <div class="card-name">QUASAR</div>
-        <div class="card-role">Military Object Detection &amp; Classification</div>
-        <p class="card-desc">Object detection pipeline for military assets in SAR and EO imagery. Gen-1 covers 5 broad classes; Gen-2 expands to 16 subclasses using a MIM (Masked Image Modeling) backbone for richer feature representation.</p>
-        <div class="tags">
-          <span class="tag">Object Detection</span>
-          <span class="tag">SAR/EO</span>
-          <span class="tag v">16 Classes</span>
-          <span class="tag v">MIM Backbone</span>
-        </div>
-      </div>
-
-      <div class="card fi">
-        <div class="card-gen">Gen-1 → Gen-2</div>
-        <div class="card-name">HARMONY</div>
-        <div class="card-role">EO/SAR Auto-Registration</div>
-        <p class="card-desc">Automated co-registration of electro-optical and SAR imagery. Gen-1 achieves fine co-registration below 100m offset; Gen-2 tackles coarse co-registration, reducing 500m displacement to ~50m through learned feature alignment.</p>
-        <div class="tags">
-          <span class="tag">Image Registration</span>
-          <span class="tag">EO/SAR Fusion</span>
-          <span class="tag v">&lt;100m Error</span>
-        </div>
-      </div>
-
-      <div class="card fi">
-        <div class="card-gen">Gen-1 Deployed · Gen-2 R&amp;D</div>
-        <div class="card-name">CHRONOS</div>
-        <div class="card-role">Change Detection &amp; Segmentation</div>
-        <p class="card-desc">Temporal change segmentation maps from multi-date SAR and EO imagery at 0.3m–2m GSD. Gen-1 uses statistical methods; Gen-2 brings AI-based detection for improved sensitivity and fewer false positives.</p>
-        <div class="tags">
-          <span class="tag">Change Detection</span>
-          <span class="tag">Segmentation</span>
-          <span class="tag">0.3m–2m GSD</span>
-          <span class="tag v">AI-Based</span>
-        </div>
-      </div>
-
-      <div class="card fi">
-        <div class="card-gen">Active Development</div>
-        <div class="card-name">S2O</div>
-        <div class="card-role">SAR-to-Optical Translation</div>
-        <p class="card-desc">Translates synthetic aperture radar imagery to photorealistic optical output. Regenerates PAN images from SAR at 0.3m–2m resolution, enabling human-interpretable radar visualization without requiring optical sensors.</p>
-        <div class="tags">
-          <span class="tag">Image Translation</span>
-          <span class="tag">Generative AI</span>
-          <span class="tag">SAR → Optical</span>
-          <span class="tag v">0.3m GSD</span>
-        </div>
-      </div>
-
-      <div class="card fi">
-        <div class="card-gen">R&amp;D Phase</div>
-        <div class="card-name">SARSIMX</div>
-        <div class="card-role">SAR Simulator from 3D CAD</div>
-        <p class="card-desc">Generates synthetic SAR imagery from 3D CAD models using the RaySAR ray-tracing framework. Enables sim-to-real training data generation without physical sensors — critical for rare target augmentation.</p>
-        <div class="tags">
-          <span class="tag">SAR Simulation</span>
-          <span class="tag">RaySAR</span>
-          <span class="tag v">3D CAD → SAR</span>
-        </div>
-      </div>
-
-      <div class="card fi">
-        <div class="card-gen">Deployed — Airgapped Windows</div>
-        <div class="card-name">ISR-GPT</div>
-        <div class="card-role">Intelligence Report Chatbot</div>
-        <p class="card-desc">RAG-based chatbot over IMINT intelligence reports with precise citation support. Deployed in fully airgapped Windows environments. Enables analysts to query report archives in natural language with source traceability.</p>
-        <div class="tags">
-          <span class="tag">RAG</span>
-          <span class="tag">LLM</span>
-          <span class="tag">Airgapped</span>
-          <span class="tag v">Citation Support</span>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- BLOG -->
-  <section class="sec" id="blog">
-    <div class="sec-tag fi">// Research Writing</div>
-    <h2 class="sec-h fi">Technical Blog</h2>
-    <div class="blog-grid">
-      <a href="blog/moe.html" class="bcard fi">
-        <div class="bmeta">
-          <span class="bdate">Jul 2026</span>
-          <span class="bbadge">DEEP DIVE</span>
-        </div>
-        <h3 class="btitle">How a Mixture-of-Experts Model Actually Works</h3>
-        <p class="bexcerpt">Every number, worked out by hand. A complete walkthrough of MoE architecture — from tokenization through multi-head attention, expert routing, and FFN processing — using a toy model where every matrix fits on the page.</p>
-        <div class="bmore">Read post <span>→</span></div>
-      </a>
-    </div>
-  </section>
-
-  <!-- CONTACT -->
-  <section class="sec" id="contact">
-    <div class="sec-tag fi">// Reach Out</div>
-    <h2 class="sec-h fi">Contact</h2>
-    <div class="cbox fi">
-      <p>Building something at the intersection of AI and geospatial intelligence? Working on edge-deployable perception? Let's talk.</p>
-      <a href="mailto:rakshit@galaxeye.space" class="cemail">rakshit@galaxeye.space</a>
-      <div style="display:flex;gap:.85rem;justify-content:center;margin-top:1rem;">
-        <a href="https://github.com/rakaboss98" target="_blank" class="btn btn-s">GitHub</a>
-      </div>
-    </div>
-  </section>
-
-  <footer>
-    <span>RAKSHIT BHATT // AI SYSTEMS ENGINEER @ GALAXEYE SPACE</span>
-    <span class="hi">rakshit@galaxeye.space</span>
-  </footer>
-
-</div><!-- .wrap -->
-
-<script>
-/* ── Particle canvas ── */
-(function () {
-  const c = document.getElementById('bgc');
-  const x = c.getContext('2d');
-  let W, H, pts;
-
-  function init() {
-    W = c.width = window.innerWidth;
-    H = c.height = window.innerHeight;
-    const n = Math.floor(W * H / 14000);
-    pts = Array.from({ length: n }, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      vx: (Math.random() - .5) * .28, vy: (Math.random() - .5) * .28,
-      r: Math.random() * 1.4 + .4
-    }));
-  }
-
-  function frame() {
-    x.clearRect(0, 0, W, H);
-    for (let i = 0; i < pts.length; i++) {
-      for (let j = i + 1; j < pts.length; j++) {
-        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d < 145) {
-          x.globalAlpha = (1 - d / 145) * 0.32;
-          x.strokeStyle = '#00d9ff';
-          x.lineWidth = .5;
-          x.beginPath(); x.moveTo(pts[i].x, pts[i].y); x.lineTo(pts[j].x, pts[j].y); x.stroke();
-        }
-      }
-    }
-    x.globalAlpha = 1;
-    pts.forEach(p => {
-      x.beginPath(); x.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      x.fillStyle = 'rgba(0,217,255,.45)'; x.fill();
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0 || p.x > W) p.vx *= -1;
-      if (p.y < 0 || p.y > H) p.vy *= -1;
-    });
-    requestAnimationFrame(frame);
-  }
-
-  init(); frame();
-  window.addEventListener('resize', init);
-})();
-
-/* ── Typewriter ── */
-(function () {
-  const phrases = [
-    'Building EO/SAR perception systems.',
-    'Routing intelligence through MoE architectures.',
-    'Detecting change in a changing world.',
-    'Deploying AI at the edge — no cloud required.',
-    'Simulating the real world with SarSimX.',
-  ];
-  let pi = 0, ci = 0, del = false;
-  const el = document.getElementById('typer');
-
-  function tick() {
-    const cur = phrases[pi];
-    el.textContent = del ? cur.slice(0, --ci) : cur.slice(0, ++ci);
-    if (!del && ci === cur.length) { setTimeout(() => { del = true; tick(); }, 2600); return; }
-    if (del && ci === 0) { del = false; pi = (pi + 1) % phrases.length; }
-    setTimeout(tick, del ? 36 : 65);
-  }
-  tick();
-})();
-
-/* ── Scroll animations ── */
-(function () {
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('on');
-        e.target.querySelectorAll('.sk-fill').forEach(f => f.classList.add('on'));
-        io.unobserve(e.target);
-      }
-    });
-  }, { threshold: .12 });
-
-  document.querySelectorAll('.fi').forEach(el => io.observe(el));
-
-  /* trigger skill bars when about section enters view */
-  const aboutIO = new IntersectionObserver(entries => {
-    if (entries[0].isIntersecting) {
-      document.querySelectorAll('.sk-fill').forEach(f => f.classList.add('on'));
-    }
-  }, { threshold: .1 });
-  const ab = document.getElementById('about');
-  if (ab) aboutIO.observe(ab);
-})();
-</script>
+<footer>
+  <span>© 2026 Rakshit Bhatt</span>
+  <a href="mailto:rakshit@galaxeye.space">rakshit@galaxeye.space</a>
+</footer>
 
 </body>
 </html>
