@@ -244,25 +244,42 @@ writes them by hand, which is exactly why they look random.
 
 ## 1.3 — The residual stream is a shared workspace
 
-Here is the single most useful mental model for reading any transformer.
+Every token has a single vector that travels the whole length of the model. It starts out as
+that token's embedding, and it ends up as the vector the model uses to predict the next word.
+That vector is called the **residual stream**.
 
-Picture a **conveyor belt** carrying one vector per token. Every component in the model does the
-same three things:
-
-1. **Read** the belt,
-2. compute something,
-3. **Add** its result back onto the belt.
-
-Nothing ever replaces what is on the belt. Components only ever *add corrections* to it. That
-belt is called the **residual stream**, and the additions are called **residual connections**.
+Components do not replace it. Each one reads the current vector, computes something from it, and
+adds the result back:
 
 ```
-   Emb ──┬────────────────────────────┬──▶ ... the belt keeps flowing
-         │                            │
-         ▼                            │
-     [ Attention ]                    │
-         │                            │
-         └───────── + ────────────────┘   ← its output is ADDED, not substituted
+     x  =  x  +  attention(x)
+     x  =  x  +  feed_forward(x)
+```
+
+That `+` is called a **residual connection**. Because every component adds, the stream
+accumulates. After attention runs, the vector holds the original embedding plus whatever
+attention contributed. After the feed-forward network runs, it holds all of that plus the FFN's
+contribution. Nothing written earlier is removed.
+
+```
+           embedding
+               │
+               ├───────────────┐
+               ▼               │
+           attention           │
+               │               │
+               ▼               │
+              (+) ◀────────────┘
+               │
+               ├───────────────┐
+               ▼               │
+              FFN              │
+               │               │
+               ▼               │
+              (+) ◀────────────┘
+               │
+               ▼
+          next block
 ```
 
 Two reasons this matters, and both will show up in the numbers:
