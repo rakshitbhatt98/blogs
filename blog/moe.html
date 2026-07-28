@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How a Mixture-of-Experts Model Actually Works — Rakshit Bhatt</title>
+  <meta name="description" content="A complete numerical walkthrough of MoE architecture — from tokenisation through attention, expert routing, and FFN processing.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #030309;
+      --bg2:      #09090f;
+      --card:     rgba(255,255,255,.028);
+      --cyan:     #00d9ff;
+      --purple:   #8b5cf6;
+      --green:    #00ff88;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --border:   rgba(0,217,255,.1);
+      --code-bg:  #0d0d18;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 17px;
+      line-height: 1.75;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2.5rem;
+      background: rgba(3,3,9,.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .back {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: .1em;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      transition: color .2s;
+    }
+    .back:hover { color: var(--cyan); }
+    .nav-home {
+      font-family: 'Orbitron', monospace;
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--cyan);
+      text-decoration: none;
+      letter-spacing: .12em;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr min(720px, 100%) 1fr;
+      gap: 0;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    /* ── TOC sidebar ── */
+    .toc-wrap {
+      padding: 3rem 1.5rem 3rem 2rem;
+      position: sticky;
+      top: 64px;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .toc-wrap::-webkit-scrollbar { width: 4px; }
+    .toc-wrap::-webkit-scrollbar-track { background: transparent; }
+    .toc-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .toc-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem;
+      color: var(--cyan);
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      margin-bottom: 1.2rem;
+    }
+    #toc-list { list-style: none; }
+    #toc-list li { margin-bottom: .15rem; }
+    #toc-list a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem;
+      color: var(--muted);
+      text-decoration: none;
+      display: block;
+      padding: .25rem .5rem;
+      border-left: 2px solid transparent;
+      border-radius: 0 3px 3px 0;
+      transition: all .18s;
+      line-height: 1.4;
+    }
+    #toc-list a:hover { color: var(--cyan); border-left-color: var(--cyan); background: rgba(0,217,255,.04); }
+    #toc-list a.active { color: var(--cyan); border-left-color: var(--cyan); background: rgba(0,217,255,.06); }
+    #toc-list .toc-h3 { padding-left: 1.2rem; }
+
+    /* ── Article ── */
+    article {
+      padding: 4rem 2rem 6rem;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      min-width: 0;
+    }
+
+    /* Progress bar */
+    #prog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      z-index: 9999;
+      width: 0%;
+      transition: width .1s linear;
+    }
+
+    /* ── Post header ── */
+    .post-header {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .post-meta {
+      display: flex;
+      gap: .85rem;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+    .post-date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem;
+      color: var(--muted);
+    }
+    .post-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem;
+      padding: .2rem .55rem;
+      background: rgba(0,217,255,.1);
+      color: var(--cyan);
+      border: 1px solid rgba(0,217,255,.22);
+      border-radius: 3px;
+    }
+    .post-title {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700;
+      line-height: 1.22;
+      margin-bottom: .8rem;
+      color: var(--text);
+    }
+    .post-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Rendered markdown ── */
+    #content h1 { display: none; } /* already in post-header */
+
+    #content h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 3.5rem 0 1.2rem;
+      padding-bottom: .6rem;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 80px;
+    }
+
+    #content h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--cyan);
+      margin: 2.2rem 0 .9rem;
+      scroll-margin-top: 80px;
+    }
+
+    #content h4 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .9rem;
+      color: var(--text);
+      font-weight: 500;
+      margin: 1.6rem 0 .6rem;
+      letter-spacing: .06em;
+      scroll-margin-top: 80px;
+    }
+
+    #content p { color: #c8d4e0; margin-bottom: 1.15rem; }
+
+    #content strong { color: var(--text); font-weight: 600; }
+
+    #content em { color: #a0aec0; }
+
+    #content a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid rgba(0,217,255,.3); transition: border-color .18s; }
+    #content a:hover { border-bottom-color: var(--cyan); }
+
+    /* Blockquotes */
+    #content blockquote {
+      border-left: 3px solid var(--cyan);
+      padding: 1rem 1.5rem;
+      margin: 1.8rem 0;
+      background: rgba(0,217,255,.04);
+      border-radius: 0 6px 6px 0;
+      font-style: italic;
+      color: var(--muted);
+    }
+    #content blockquote strong { color: #94a3b8; }
+
+    /* Code inline */
+    #content :not(pre) > code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .85em;
+      background: var(--code-bg);
+      color: var(--cyan);
+      padding: .15em .4em;
+      border-radius: 3px;
+      border: 1px solid rgba(0,217,255,.12);
+    }
+
+    /* Code blocks */
+    #content pre {
+      background: var(--code-bg);
+      border: 1px solid rgba(0,217,255,.12);
+      border-radius: 7px;
+      padding: 1.4rem 1.6rem;
+      overflow-x: auto;
+      margin: 1.6rem 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0,217,255,.2) transparent;
+    }
+    #content pre::-webkit-scrollbar { height: 4px; }
+    #content pre::-webkit-scrollbar-track { background: transparent; }
+    #content pre::-webkit-scrollbar-thumb { background: rgba(0,217,255,.2); border-radius: 4px; }
+    #content pre code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .82rem;
+      line-height: 1.6;
+      color: #c0d4e8;
+      background: none;
+      border: none;
+      padding: 0;
+      white-space: pre;
+    }
+
+    /* Tables */
+    #content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.8rem 0;
+      font-size: .88rem;
+      overflow-x: auto;
+      display: block;
+    }
+    #content th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      background: rgba(0,217,255,.06);
+      border: 1px solid rgba(0,217,255,.12);
+      padding: .65rem 1rem;
+      text-align: left;
+    }
+    #content td {
+      border: 1px solid rgba(0,217,255,.08);
+      padding: .6rem 1rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .82rem;
+    }
+    #content tr:hover td { background: rgba(0,217,255,.03); }
+
+    /* Horizontal rules */
+    #content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 3rem 0;
+    }
+
+    /* Lists */
+    #content ul, #content ol {
+      padding-left: 1.8rem;
+      margin-bottom: 1.1rem;
+      color: #c8d4e0;
+    }
+    #content li { margin-bottom: .35rem; }
+
+    /* Part headers (h1 inside content) */
+    #content h1 + p, #content h1 { margin-top: 2rem; }
+
+    /* ── Right spacer ── */
+    .spacer { /* empty right column */ }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc-wrap { display: none; }
+      .spacer { display: none; }
+      article { border: none; padding: 2.5rem 1.5rem 5rem; }
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 1rem 1.2rem; }
+      article { padding: 2rem 1rem 4rem; }
+      .post-title { font-size: 1.65rem; }
+    }
+  </style>
+</head>
+<body>
+<div id="prog"></div>
+
+<nav>
+  <a href="../index.html" class="back">← rakshitbhatt.github.io</a>
+  <a href="../index.html" class="nav-home">RB<span style="color:#64748b;font-weight:400">.exe</span></a>
+</nav>
+
+<div class="layout">
+
+  <!-- TOC -->
+  <aside class="toc-wrap" id="toc-aside">
+    <div class="toc-title">// Contents</div>
+    <ul id="toc-list"></ul>
+  </aside>
+
+  <!-- Main article -->
+  <article>
+    <div class="post-header">
+      <div class="post-meta">
+        <span class="post-date">July 2026</span>
+        <span class="post-badge">DEEP DIVE</span>
+      </div>
+      <h1 class="post-title">How a Mixture-of-Experts Model Actually Works</h1>
+      <p class="post-sub">Every number, worked out by hand. A complete numerical walkthrough of MoE architecture from raw text to a next-token probability distribution.</p>
+    </div>
+
+    <div id="content">
+      <p style="color:#64748b;font-family:'JetBrains Mono',monospace;font-size:.85rem;">Loading article…</p>
+    </div>
+  </article>
+
+  <div class="spacer"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+/* ── Render markdown ── */
+marked.setOptions({
+  breaks: false,
+  gfm: true,
+  headerIds: true,
+});
+
+fetch('moe.md')
+  .then(r => {
+    if (!r.ok) throw new Error('fetch failed');
+    return r.text();
+  })
+  .then(md => {
+    const content = document.getElementById('content');
+
+    /* strip the first h1 since it's in post-header */
+    const stripped = md.replace(/^#[^#][^\n]*\n/, '');
+    content.innerHTML = marked.parse(stripped);
+
+    buildTOC();
+    setupScrollSpy();
+  })
+  .catch(err => {
+    document.getElementById('content').innerHTML =
+      `<p style="color:#ff4757">Failed to load article: ${err.message}.<br>
+       Make sure moe.md is in the same directory as moe.html.</p>`;
+  });
+
+/* ── Build table of contents ── */
+function buildTOC() {
+  const list = document.getElementById('toc-list');
+  const headings = document.querySelectorAll('#content h2, #content h3');
+
+  headings.forEach((h, i) => {
+    if (!h.id) h.id = 'h-' + i;
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.textContent = h.textContent;
+    if (h.tagName === 'H3') a.classList.add('toc-h3');
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.getElementById(h.id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    li.appendChild(a);
+    list.appendChild(li);
+  });
+}
+
+/* ── Scroll spy + progress ── */
+function setupScrollSpy() {
+  const prog = document.getElementById('prog');
+  const headings = Array.from(document.querySelectorAll('#content h2, #content h3'));
+  const links = Array.from(document.querySelectorAll('#toc-list a'));
+
+  window.addEventListener('scroll', () => {
+    /* progress bar */
+    const scrolled = window.scrollY;
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    prog.style.width = (scrolled / total * 100) + '%';
+
+    /* active TOC link */
+    let current = null;
+    for (const h of headings) {
+      if (h.getBoundingClientRect().top <= 120) current = h.id;
+    }
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }, { passive: true });
+}
+</script>
+
+</body>
+</html>
