@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How a Mixture-of-Experts Model Actually Works — The Forward Pass</title>
-  <meta name="description" content="Every number, worked out by hand — a complete, working language model small enough that every matrix fits on the page.">
+  <meta name="description" content="An intuitive and comprehensive numerical walkthrough explaining each step in the forward pass of a Mixture of Experts Transformer Model.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -65,22 +65,11 @@
 
     /* ── Layout ── */
     .shell {
-      max-width: 1000px; margin: 0 auto; padding: 0 32px;
+      max-width: 900px; margin: 0 auto; padding: 0 32px;
     }
 
     main { min-width: 0; padding: 0 0 8rem; }
-
-    /* Running text keeps a readable measure; wide blocks span the full column. */
-    .post-head > *,
-    #article > p,
-    #article > ul,
-    #article > ol,
-    #article > h1,
-    #article > h2,
-    #article > h3,
-    #article > h4,
-    #article > blockquote,
-    #article > .toc-inline { max-width: 760px; }
+    /* Text and matrix boxes share the same column edges. */
 
     /* ── Post header ── */
     .post-head { padding: 64px 0 8px; }
@@ -267,37 +256,27 @@
     .toc-inline-label {
       font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase;
       color: color-mix(in srgb, var(--color-text) 46%, transparent);
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.4rem;
     }
-    .toc-group + .toc-group {
-      margin-top: 1.5rem; padding-top: 1.4rem;
-      border-top: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+    .toc-line {
+      display: grid; grid-template-columns: 62px 1fr; align-items: baseline;
+      column-gap: 16px; text-decoration: none; padding: 7px 0;
     }
-    .toc-group-title {
-      font-family: var(--font-mono); font-size: 11px; font-weight: 500;
-      letter-spacing: 0.14em; text-transform: uppercase;
+    .toc-line + .toc-line { border-top: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); }
+    .toc-line.tail { grid-template-columns: 62px 1fr; }
+    .toc-num {
+      font-family: var(--font-mono); font-size: 11.5px; font-weight: 500;
+      letter-spacing: 0.02em; text-align: left;
       color: var(--color-accent);
-      margin-bottom: .85rem;
     }
-    .toc-group-title a { color: inherit; text-decoration: none; transition: opacity .15s; }
-    .toc-group-title a:hover { opacity: .7; }
-    /* a group whose only child is its title (no sub-items) reads as a single link */
-    .toc-group-title:only-child { margin-bottom: 0; }
-    .toc-item {
-      display: grid; grid-template-columns: 38px 1fr; align-items: baseline;
-      column-gap: 14px; text-decoration: none; padding: 4px 0;
-    }
-    .toc-badge {
-      font-family: var(--font-mono); font-size: 11px;
-      color: color-mix(in srgb, var(--color-accent) 82%, var(--color-text));
-      text-align: right; letter-spacing: 0.01em;
-    }
-    .toc-text {
-      font-size: 14px; line-height: 1.4;
-      color: color-mix(in srgb, var(--color-text) 76%, transparent);
+    .toc-title-text {
+      font-size: 15px; line-height: 1.4;
+      color: color-mix(in srgb, var(--color-text) 82%, transparent);
       transition: color .15s;
     }
-    .toc-item:hover .toc-text { color: var(--color-accent); }
+    .toc-line:hover .toc-title-text { color: var(--color-accent); }
+    .toc-line.tail .toc-title-text { font-size: 14px; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
+    .toc-divider { height: 1px; margin: .9rem 0; background: color-mix(in srgb, var(--color-text) 10%, transparent); }
 
     /* ── Post footer ── */
     .post-foot {
@@ -331,11 +310,11 @@
   <main>
     <header class="post-head">
       <div class="head-meta">
-        <span class="tag tag-outline">Machine Learning</span>
+        <span class="tag tag-outline">Numerical Walkthrough</span>
         <span class="sub-note">Interpretability, from first principles</span>
       </div>
       <h1>How a Mixture-of-Experts Model Actually Works</h1>
-      <p class="post-sub">Every number, worked out by hand — a complete, working language model small enough that every matrix fits on the page.</p>
+      <p class="post-sub">An intuitive and comprehensive numerical walkthrough explaining each step in the forward pass of a Mixture of Experts Transformer Model.</p>
       <div class="post-facts">
         <span>July 2026</span>
         <span class="dot"></span>
@@ -402,18 +381,20 @@
   /* Give every heading an id, and reformat step / part headings. */
   function decorateHeadings() {
     const article = document.getElementById('article');
+    let partNum = 0;
     article.querySelectorAll('h1, h2, h3, h4').forEach((h, i) => {
       if (!h.id) h.id = 'sec-' + i;
       h.dataset.raw = h.textContent;   // keep original text for the TOC
 
       if (h.tagName === 'H1') {
-        // "PART I — ATTENTION: HOW WORDS READ EACH OTHER"
-        const parts = h.textContent.split(/\s+[—–]\s+/);
-        if (parts.length >= 2) {
-          const kicker = parts[0].trim();
-          const title = niceTitle(parts.slice(1).join(' — ').trim());
+        // "PART I — ATTENTION: HOW WORDS READ EACH OTHER" → sequential "Part N"
+        const m = h.textContent.match(/^PART\s+\S+\s+[—–]\s+(.+)$/i);
+        if (m) {
+          partNum++;
+          h.dataset.part = partNum;
+          const title = niceTitle(m[1].trim());
           h.innerHTML = '';
-          const k = document.createElement('span'); k.className = 'part-kicker'; k.textContent = kicker;
+          const k = document.createElement('span'); k.className = 'part-kicker'; k.textContent = 'Part ' + partNum;
           const t = document.createElement('span'); t.className = 'part-title'; t.textContent = title;
           h.append(k, t);
         }
@@ -443,63 +424,45 @@
     });
   }
 
-  /* Upfront Contents card — grouped by PART, with aligned step badges. */
+  /* Upfront Contents card — main parts only (the H1 sections). */
   function buildInlineTOC() {
     const article = document.getElementById('article');
-    const hs = Array.from(article.querySelectorAll('h1, h2'));
+    const hs = Array.from(article.querySelectorAll('h1'));
     if (!hs.length) return;
 
     const box = document.createElement('div');
     box.className = 'toc-inline';
     box.innerHTML = '<div class="toc-inline-label">Contents</div>';
 
-    let group = null;
-    const startGroup = (titleText, targetId) => {
-      group = document.createElement('div');
-      group.className = 'toc-group';
-      if (titleText) {
-        const gt = document.createElement('div');
-        gt.className = 'toc-group-title';
-        if (targetId) {
-          const a = document.createElement('a');
-          a.href = '#' + targetId;
-          a.textContent = titleText;
-          a.addEventListener('click', e => {
-            e.preventDefault();
-            document.getElementById(targetId).scrollIntoView({ behavior: 'smooth' });
-          });
-          gt.appendChild(a);
-        } else {
-          gt.textContent = titleText;
-        }
-        group.appendChild(gt);
-      }
-      box.appendChild(group);
-    };
-
+    let dividerPlaced = false;
     hs.forEach(h => {
-      if (h.tagName === 'H1') {
-        // group label = "PART I — ATTENTION" (drop any trailing ": …")
-        const full = (h.dataset.raw || h.textContent);
-        const seg = full.split(/\s+[—–]\s+/);
-        let label = full;
-        if (seg.length >= 2) label = seg[0].trim() + ' — ' + seg[1].split(':')[0].trim();
-        startGroup(label, h.id);
-      } else {
-        if (!group) startGroup('Overview');
-        const { badge, title } = parseHeading(h.dataset.raw || h.textContent);
-        const a = document.createElement('a');
-        a.className = 'toc-item';
-        a.href = '#' + h.id;
-        a.innerHTML = '<span class="toc-badge">' + (badge || '') + '</span>' +
-                      '<span class="toc-text"></span>';
-        a.querySelector('.toc-text').textContent = title;
-        a.addEventListener('click', e => {
-          e.preventDefault();
-          document.getElementById(h.id).scrollIntoView({ behavior: 'smooth' });
-        });
-        group.appendChild(a);
+      const raw = h.dataset.raw || h.textContent;
+      const partMatch = raw.match(/^PART\s+\S+\s+[—–]\s+(.+)$/i);
+
+      // Divider between the numbered parts and the trailing reference sections
+      if (!partMatch && !dividerPlaced && box.querySelector('.toc-line')) {
+        const d = document.createElement('div'); d.className = 'toc-divider';
+        box.appendChild(d); dividerPlaced = true;
       }
+
+      const a = document.createElement('a');
+      a.className = 'toc-line' + (partMatch ? '' : ' tail');
+      a.href = '#' + h.id;
+
+      const num = document.createElement('span');
+      num.className = 'toc-num';
+      num.textContent = partMatch ? ('Part ' + (h.dataset.part || '')) : '';
+
+      const t = document.createElement('span');
+      t.className = 'toc-title-text';
+      t.textContent = partMatch ? niceTitle(partMatch[1].split(':')[0].trim()) : raw;
+
+      a.append(num, t);
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        document.getElementById(h.id).scrollIntoView({ behavior: 'smooth' });
+      });
+      box.appendChild(a);
     });
 
     article.insertBefore(box, article.firstChild);

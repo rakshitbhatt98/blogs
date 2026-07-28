@@ -129,18 +129,6 @@ Mixture of Experts changes exactly one thing. It replaces that one big FFN with 
 ones, called **experts**, plus a tiny **router** that looks at each word and picks just two of
 them.
 
-```
-       DENSE MODEL                          MoE MODEL
-
-    every token uses                  each token uses only
-    the ONE big FFN                   2 of the 8 experts
-                                            ┌→ Expert 0 ┐
-         ┌─────────┐                        ├→ Expert 1 ┤
-    ───▶ │   FFN   │ ───▶          ───▶ Router→ …        ├──▶
-         └─────────┘                        ├→ Expert 6 ┤
-                                            └→ Expert 7 ┘
-```
-
 The consequence is the whole point of the architecture:
 
 > **Total parameters grow with the number of experts. Compute per token does not.**
