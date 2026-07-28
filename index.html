@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rakshit Bhatt — Writing</title>
-  <meta name="description" content="Research notes and technical deep dives on AI systems by Rakshit Bhatt.">
+  <title>Rakshit Bhatt — Blog</title>
+  <meta name="description" content="Technical writing on AI, machine learning, and the mathematics of modern systems.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -12,10 +12,10 @@
 
     :root {
       --bg:       #0c0b10;
-      --bg-card:  #13121a;
-      --bg-hover: #181720;
+      --bg-card:  #131219;
+      --bg-hover: #17161f;
       --text:     #f0eee9;
-      --body:     #b8b5af;
+      --body:     #b3b0aa;
       --muted:    #6a6870;
       --gold:     #d4a853;
       --gold-dim: rgba(212,168,83,0.1);
@@ -38,10 +38,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      max-width: 1100px;
+      max-width: 1120px;
       margin: 0 auto;
-      padding: 2.2rem 2.5rem;
-      border-bottom: 1px solid var(--border);
+      padding: 2.1rem 2.5rem;
     }
 
     .site-name {
@@ -50,6 +49,7 @@
       font-size: 1.4rem;
       color: var(--text);
       text-decoration: none;
+      letter-spacing: -0.01em;
     }
 
     .site-nav { list-style: none; display: flex; gap: 2rem; }
@@ -61,84 +61,92 @@
     }
     .site-nav a:hover { color: var(--text); }
 
-    /* ── Intro ── */
-    .intro {
-      max-width: 1100px;
+    /* ── Masthead ── */
+    .masthead {
+      max-width: 1120px;
       margin: 0 auto;
-      padding: 5rem 2.5rem 3.8rem;
+      padding: 4rem 2.5rem 2.6rem;
     }
 
-    .intro-label {
+    .masthead h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(2.6rem, 6vw, 4rem);
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .masthead .rule {
+      margin-top: 2.4rem;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .masthead .count {
+      float: right;
+      margin-top: -0.7rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.7rem;
-      color: var(--gold);
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-    }
-
-    .intro-headline {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-style: italic;
-      font-size: clamp(1.9rem, 3.5vw, 2.65rem);
-      color: var(--text);
-      line-height: 1.28;
-      max-width: 660px;
-      letter-spacing: -0.015em;
-    }
-
-    /* ── Posts ── */
-    .posts-wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 2.5rem 8rem;
-    }
-
-    .section-row {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.68rem;
       color: var(--muted);
-      letter-spacing: 0.18em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      padding-bottom: 1.2rem;
-      margin-bottom: 2rem;
-      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      padding-left: 1rem;
     }
 
-    /* ── Featured card ── */
-    .feat {
+    /* ── Grid ── */
+    .grid {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 3rem 2.5rem 8rem;
       display: grid;
-      grid-template-columns: 1fr 360px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      text-decoration: none;
-      transition: border-color 0.24s, background 0.24s, box-shadow 0.24s;
-      margin-bottom: 3rem;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 2.2rem 2rem;
     }
 
-    .feat:hover {
-      border-color: var(--border-h);
-      background: var(--bg-hover);
-      box-shadow: 0 10px 50px rgba(0,0,0,0.45);
-    }
-
-    .feat-body {
-      padding: 2.8rem 3rem;
+    /* ── Card ── */
+    .card {
       display: flex;
       flex-direction: column;
-      gap: 1.4rem;
+      text-decoration: none;
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      transition: border-color 0.24s, transform 0.24s, box-shadow 0.24s, background 0.24s;
+    }
+    .card:hover {
+      border-color: var(--border-h);
+      background: var(--bg-hover);
+      transform: translateY(-4px);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.45);
     }
 
-    .tags { display: flex; gap: 0.5rem; }
+    .thumb {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: #09080f;
+      overflow: hidden;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+    }
+    .thumb svg { width: 100%; height: 100%; display: block; }
 
+    .card-body {
+      padding: 1.5rem 1.6rem 1.7rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .tags { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
     .tag {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.66rem;
+      font-size: 0.64rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      padding: 0.26rem 0.6rem;
+      padding: 0.24rem 0.58rem;
       border-radius: 3px;
       background: var(--gold-dim);
       color: var(--gold);
@@ -150,65 +158,50 @@
       border-color: var(--border);
     }
 
-    .feat-title {
+    .card-title {
       font-family: 'Instrument Serif', Georgia, serif;
-      font-size: clamp(1.5rem, 2.6vw, 2rem);
+      font-size: 1.4rem;
       font-weight: 400;
       color: var(--text);
-      line-height: 1.28;
+      line-height: 1.24;
       letter-spacing: -0.01em;
+      margin-bottom: 0.7rem;
     }
 
-    .feat-excerpt {
-      font-size: 0.9rem;
+    .card-excerpt {
+      font-size: 0.865rem;
       color: var(--body);
-      line-height: 1.82;
-      max-width: 50ch;
+      line-height: 1.72;
+      margin-bottom: 1.5rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
-    .feat-footer {
+    .card-meta {
+      margin-top: auto;
       display: flex;
       align-items: center;
-      gap: 1.4rem;
-      margin-top: auto;
-    }
-
-    .meta {
+      gap: 1rem;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--muted);
     }
-
-    .read-cta {
+    .card-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--muted); }
+    .card-meta .arrow {
       margin-left: auto;
-      font-size: 0.82rem;
-      font-weight: 500;
       color: var(--gold);
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      transition: gap 0.18s;
+      transition: transform 0.18s;
     }
-    .feat:hover .read-cta { gap: 0.55rem; }
-
-    /* ── Thumbnail ── */
-    .feat-visual {
-      background: #09080f;
-      border-left: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      min-height: 300px;
-    }
-    .feat-visual svg { width: 100%; height: 100%; display: block; }
+    .card:hover .card-meta .arrow { transform: translateX(3px); }
 
     /* ── Footer ── */
     footer {
       border-top: 1px solid var(--border);
-      max-width: 1100px;
+      max-width: 1120px;
       margin: 0 auto;
-      padding: 1.8rem 2.5rem;
+      padding: 1.9rem 2.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -222,16 +215,11 @@
     footer a:hover { color: var(--gold); }
 
     /* ── Responsive ── */
-    @media (max-width: 820px) {
-      .feat { grid-template-columns: 1fr; }
-      .feat-visual { min-height: 200px; border-left: none; border-top: 1px solid var(--border); order: -1; }
-      .feat-body { padding: 2rem 1.8rem; }
-    }
-
     @media (max-width: 560px) {
-      header, .intro, .posts-wrap, footer { padding-left: 1.3rem; padding-right: 1.3rem; }
-      .intro { padding-top: 3.2rem; padding-bottom: 2.8rem; }
-      footer { flex-direction: column; gap: 0.4rem; text-align: center; }
+      header { padding: 1.7rem 1.3rem; }
+      .masthead { padding: 2.6rem 1.3rem 2rem; }
+      .grid { padding: 2rem 1.3rem 5rem; grid-template-columns: 1fr; }
+      footer { padding: 1.6rem 1.3rem; flex-direction: column; gap: 0.5rem; text-align: center; }
     }
   </style>
 </head>
@@ -244,162 +232,141 @@
   </ul>
 </header>
 
-<div class="intro">
-  <div class="intro-label">Writing</div>
-  <p class="intro-headline">Research notes and deep dives on AI, machine learning, and the mathematics of modern systems.</p>
+<div class="masthead">
+  <h1>Blog</h1>
+  <div class="rule"><span class="count">1 article</span></div>
 </div>
 
-<div class="posts-wrap">
-  <div class="section-row">All articles</div>
+<main class="grid">
 
-  <a href="blog/moe.html" class="feat">
-    <div class="feat-body">
-      <div class="tags">
-        <span class="tag">Machine Learning</span>
-        <span class="tag muted">Deep Dive</span>
-      </div>
-
-      <h2 class="feat-title">How a Mixture&#x2011;of&#x2011;Experts Model Actually Works</h2>
-
-      <p class="feat-excerpt">Every number, worked out by hand. A complete walkthrough of MoE architecture — from tokenisation through multi-head attention, expert routing, and FFN processing — using a toy model where every matrix fits on the page.</p>
-
-      <div class="feat-footer">
-        <span class="meta">July 2026</span>
-        <span class="meta">45 min read</span>
-        <span class="read-cta">Read article <span>→</span></span>
-      </div>
-    </div>
-
-    <!-- Abstract MoE routing diagram -->
-    <div class="feat-visual">
-      <svg viewBox="0 0 360 300" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <!-- ── MoE post ── -->
+  <a href="blog/moe.html" class="card">
+    <div class="thumb">
+      <svg viewBox="0 0 360 225" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
         <defs>
-          <radialGradient id="bg" cx="55%" cy="38%" r="65%">
-            <stop offset="0%" stop-color="#16112a"/>
-            <stop offset="100%" stop-color="#060510"/>
+          <radialGradient id="bg" cx="55%" cy="40%" r="70%">
+            <stop offset="0%" stop-color="#17122b"/>
+            <stop offset="100%" stop-color="#070610"/>
           </radialGradient>
           <filter id="gf" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="3.5" result="b"/>
+            <feGaussianBlur stdDeviation="2.6" result="b"/>
             <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
           <filter id="sgf" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feGaussianBlur stdDeviation="5" result="b"/>
             <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
 
-        <rect width="360" height="300" fill="url(#bg)"/>
+        <rect width="360" height="225" fill="url(#bg)"/>
 
-        <!-- subtle grid -->
-        <g stroke="rgba(255,255,255,0.032)" stroke-width="0.6">
-          <line x1="0" y1="75"  x2="360" y2="75"/>
-          <line x1="0" y1="150" x2="360" y2="150"/>
-          <line x1="0" y1="225" x2="360" y2="225"/>
-          <line x1="90"  y1="0" x2="90"  y2="300"/>
-          <line x1="180" y1="0" x2="180" y2="300"/>
-          <line x1="270" y1="0" x2="270" y2="300"/>
+        <!-- grid -->
+        <g stroke="rgba(255,255,255,0.03)" stroke-width="0.6">
+          <line x1="0" y1="56"  x2="360" y2="56"/>
+          <line x1="0" y1="112" x2="360" y2="112"/>
+          <line x1="0" y1="169" x2="360" y2="169"/>
+          <line x1="90"  y1="0" x2="90"  y2="225"/>
+          <line x1="180" y1="0" x2="180" y2="225"/>
+          <line x1="270" y1="0" x2="270" y2="225"/>
         </g>
 
-        <!-- ── Token nodes (left col) ── -->
+        <!-- token nodes -->
         <g filter="url(#gf)">
-          <!-- t1 -->
-          <circle cx="55" cy="82"  r="11" fill="none" stroke="#d4a853" stroke-width="1.4" opacity="0.95"/>
-          <text x="55" y="86"  text-anchor="middle" font-family="monospace" font-size="8.5" fill="#d4a853" opacity="0.9">t1</text>
-          <!-- t2 -->
-          <circle cx="55" cy="126" r="11" fill="none" stroke="#d4a853" stroke-width="1.4" opacity="0.85"/>
-          <text x="55" y="130" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#d4a853" opacity="0.85">t2</text>
-          <!-- t3 -->
-          <circle cx="55" cy="172" r="11" fill="none" stroke="#d4a853" stroke-width="1.4" opacity="0.6"/>
-          <text x="55" y="176" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#d4a853" opacity="0.6">t3</text>
-          <!-- t4 -->
-          <circle cx="55" cy="218" r="11" fill="none" stroke="#d4a853" stroke-width="1.4" opacity="0.5"/>
-          <text x="55" y="222" text-anchor="middle" font-family="monospace" font-size="8.5" fill="#d4a853" opacity="0.5">t4</text>
+          <circle cx="50" cy="60"  r="9" fill="none" stroke="#d4a853" stroke-width="1.3" opacity="0.95"/>
+          <text x="50" y="63"  text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.9">t1</text>
+          <circle cx="50" cy="95"  r="9" fill="none" stroke="#d4a853" stroke-width="1.3" opacity="0.82"/>
+          <text x="50" y="98"  text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.82">t2</text>
+          <circle cx="50" cy="130" r="9" fill="none" stroke="#d4a853" stroke-width="1.3" opacity="0.58"/>
+          <text x="50" y="133" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.58">t3</text>
+          <circle cx="50" cy="165" r="9" fill="none" stroke="#d4a853" stroke-width="1.3" opacity="0.48"/>
+          <text x="50" y="168" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.48">t4</text>
         </g>
 
-        <!-- ── Dim background lines ── -->
-        <g stroke="rgba(255,255,255,0.055)" stroke-width="0.7" fill="none">
-          <line x1="66"  y1="82"  x2="174" y2="100"/>
-          <line x1="66"  y1="82"  x2="174" y2="136"/>
-          <line x1="66"  y1="82"  x2="174" y2="172"/>
-          <line x1="66"  y1="82"  x2="174" y2="208"/>
-          <line x1="66"  y1="126" x2="174" y2="100"/>
-          <line x1="66"  y1="126" x2="174" y2="136"/>
-          <line x1="66"  y1="126" x2="174" y2="172"/>
-          <line x1="66"  y1="126" x2="174" y2="208"/>
-          <line x1="66"  y1="172" x2="174" y2="100"/>
-          <line x1="66"  y1="172" x2="174" y2="136"/>
-          <line x1="66"  y1="172" x2="174" y2="172"/>
-          <line x1="66"  y1="172" x2="174" y2="208"/>
-          <line x1="66"  y1="218" x2="174" y2="100"/>
-          <line x1="66"  y1="218" x2="174" y2="136"/>
-          <line x1="66"  y1="218" x2="174" y2="172"/>
-          <line x1="66"  y1="218" x2="174" y2="208"/>
+        <!-- dim lines -->
+        <g stroke="rgba(255,255,255,0.05)" stroke-width="0.6" fill="none">
+          <line x1="59" y1="60"  x2="166" y2="78"/>
+          <line x1="59" y1="60"  x2="166" y2="106"/>
+          <line x1="59" y1="60"  x2="166" y2="134"/>
+          <line x1="59" y1="60"  x2="166" y2="162"/>
+          <line x1="59" y1="95"  x2="166" y2="78"/>
+          <line x1="59" y1="95"  x2="166" y2="106"/>
+          <line x1="59" y1="95"  x2="166" y2="134"/>
+          <line x1="59" y1="95"  x2="166" y2="162"/>
+          <line x1="59" y1="130" x2="166" y2="78"/>
+          <line x1="59" y1="130" x2="166" y2="106"/>
+          <line x1="59" y1="130" x2="166" y2="134"/>
+          <line x1="59" y1="130" x2="166" y2="162"/>
+          <line x1="59" y1="165" x2="166" y2="78"/>
+          <line x1="59" y1="165" x2="166" y2="106"/>
+          <line x1="59" y1="165" x2="166" y2="134"/>
+          <line x1="59" y1="165" x2="166" y2="162"/>
         </g>
 
-        <!-- ── Active routing lines ── -->
-        <!-- t1 → E0, E3 (gold, purple) -->
-        <line x1="66" y1="82" x2="174" y2="100" stroke="#d4a853" stroke-width="1.5" opacity="0.9"/>
-        <line x1="66" y1="82" x2="174" y2="208" stroke="#8b78f5" stroke-width="1.3" opacity="0.75"/>
-        <!-- t2 → E1, E3 -->
-        <line x1="66" y1="126" x2="174" y2="136" stroke="#d4a853" stroke-width="1.5" opacity="0.85"/>
-        <line x1="66" y1="126" x2="174" y2="208" stroke="#8b78f5" stroke-width="1.2" opacity="0.65"/>
-        <!-- t3 → E2, E0 -->
-        <line x1="66" y1="172" x2="174" y2="172" stroke="#d4a853" stroke-width="1.3" opacity="0.72"/>
-        <line x1="66" y1="172" x2="174" y2="100" stroke="#8b78f5" stroke-width="1.1" opacity="0.55"/>
-        <!-- t4 → E0, E1 -->
-        <line x1="66" y1="218" x2="174" y2="100" stroke="#d4a853" stroke-width="1.2" opacity="0.6"/>
-        <line x1="66" y1="218" x2="174" y2="136" stroke="#8b78f5" stroke-width="1.1" opacity="0.5"/>
+        <!-- active routing -->
+        <line x1="59" y1="60"  x2="166" y2="78"  stroke="#d4a853" stroke-width="1.4" opacity="0.9"/>
+        <line x1="59" y1="60"  x2="166" y2="162" stroke="#8b78f5" stroke-width="1.2" opacity="0.72"/>
+        <line x1="59" y1="95"  x2="166" y2="106" stroke="#d4a853" stroke-width="1.4" opacity="0.82"/>
+        <line x1="59" y1="95"  x2="166" y2="162" stroke="#8b78f5" stroke-width="1.1" opacity="0.6"/>
+        <line x1="59" y1="130" x2="166" y2="134" stroke="#d4a853" stroke-width="1.2" opacity="0.7"/>
+        <line x1="59" y1="130" x2="166" y2="78"  stroke="#8b78f5" stroke-width="1.0" opacity="0.52"/>
+        <line x1="59" y1="165" x2="166" y2="78"  stroke="#d4a853" stroke-width="1.1" opacity="0.58"/>
+        <line x1="59" y1="165" x2="166" y2="106" stroke="#8b78f5" stroke-width="1.0" opacity="0.48"/>
 
-        <!-- ── Router boxes (center) ── -->
-        <!-- Main router -->
-        <rect x="174" y="84" width="64" height="32" rx="5" fill="#11101e" stroke="#6366f1" stroke-width="1.1" opacity="0.95"/>
-        <text x="206" y="103" text-anchor="middle" font-family="monospace" font-size="8" fill="#8b78f5" opacity="0.9">Router</text>
-        <!-- Label below -->
-        <text x="206" y="130" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(255,255,255,0.2)">top-k = 2</text>
+        <!-- router -->
+        <rect x="166" y="80" width="56" height="28" rx="5" fill="#11101c" stroke="#6366f1" stroke-width="1" opacity="0.95"/>
+        <text x="194" y="97" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#8b78f5" opacity="0.9">Router</text>
+        <text x="194" y="122" text-anchor="middle" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.2)">top-k = 2</text>
 
-        <!-- Outgoing active lines (router → experts) -->
-        <line x1="238" y1="100" x2="271" y2="100" stroke="#d4a853" stroke-width="1.4" opacity="0.85"/>
-        <line x1="238" y1="100" x2="271" y2="136" stroke="#d4a853" stroke-width="1.3" opacity="0.78"/>
-        <line x1="238" y1="100" x2="271" y2="172" stroke="#8b78f5" stroke-width="1.2" opacity="0.65"/>
-        <line x1="238" y1="100" x2="271" y2="208" stroke="#8b78f5" stroke-width="1.1" opacity="0.6"/>
+        <!-- router → experts -->
+        <line x1="222" y1="94" x2="258" y2="76"  stroke="#d4a853" stroke-width="1.3" opacity="0.85"/>
+        <line x1="222" y1="94" x2="258" y2="106" stroke="#d4a853" stroke-width="1.2" opacity="0.78"/>
+        <line x1="222" y1="94" x2="258" y2="134" stroke="#8b78f5" stroke-width="1.1" opacity="0.62"/>
+        <line x1="222" y1="94" x2="258" y2="162" stroke="#8b78f5" stroke-width="1.0" opacity="0.55"/>
 
-        <!-- ── Expert boxes (right col) ── -->
-        <!-- E0 active gold -->
-        <rect x="271" y="84"  width="70" height="28" rx="5" fill="#15111f" stroke="#d4a853" stroke-width="1.3" opacity="0.95"/>
-        <text x="306" y="101" text-anchor="middle" font-family="monospace" font-size="8" fill="#d4a853" opacity="0.92">Expert 0</text>
-        <!-- E1 active gold dim -->
-        <rect x="271" y="122" width="70" height="28" rx="5" fill="#14111e" stroke="#d4a853" stroke-width="1.1" opacity="0.82"/>
-        <text x="306" y="139" text-anchor="middle" font-family="monospace" font-size="8" fill="#d4a853" opacity="0.8">Expert 1</text>
-        <!-- E2 active purple -->
-        <rect x="271" y="158" width="70" height="28" rx="5" fill="#120f1e" stroke="#8b78f5" stroke-width="1.1" opacity="0.72"/>
-        <text x="306" y="175" text-anchor="middle" font-family="monospace" font-size="8" fill="#8b78f5" opacity="0.7">Expert 2</text>
-        <!-- E3 dim -->
-        <rect x="271" y="194" width="70" height="28" rx="5" fill="#0e0d14" stroke="rgba(255,255,255,0.09)" stroke-width="0.8" opacity="0.38"/>
-        <text x="306" y="211" text-anchor="middle" font-family="monospace" font-size="8" fill="#6a6870" opacity="0.38">Expert 3</text>
+        <!-- experts -->
+        <rect x="258" y="63"  width="66" height="24" rx="5" fill="#15111f" stroke="#d4a853" stroke-width="1.2" opacity="0.95"/>
+        <text x="291" y="78"  text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.92">Expert 0</text>
+        <rect x="258" y="95"  width="66" height="24" rx="5" fill="#14111e" stroke="#d4a853" stroke-width="1"   opacity="0.8"/>
+        <text x="291" y="110" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#d4a853" opacity="0.78">Expert 1</text>
+        <rect x="258" y="127" width="66" height="24" rx="5" fill="#120f1e" stroke="#8b78f5" stroke-width="1"   opacity="0.7"/>
+        <text x="291" y="142" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#8b78f5" opacity="0.68">Expert 2</text>
+        <rect x="258" y="159" width="66" height="24" rx="5" fill="#0e0d14" stroke="rgba(255,255,255,0.08)" stroke-width="0.8" opacity="0.36"/>
+        <text x="291" y="174" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#6a6870" opacity="0.36">Expert 3</text>
 
-        <!-- ── Glow dots at junctions ── -->
-        <circle cx="271" cy="98"  r="3.5" fill="#d4a853" opacity="0.55" filter="url(#sgf)"/>
-        <circle cx="271" cy="136" r="3"   fill="#d4a853" opacity="0.45" filter="url(#sgf)"/>
-        <circle cx="271" cy="172" r="3"   fill="#8b78f5" opacity="0.42" filter="url(#sgf)"/>
+        <!-- glow -->
+        <circle cx="258" cy="75"  r="3" fill="#d4a853" opacity="0.5" filter="url(#sgf)"/>
+        <circle cx="258" cy="107" r="2.6" fill="#d4a853" opacity="0.42" filter="url(#sgf)"/>
+        <circle cx="258" cy="139" r="2.6" fill="#8b78f5" opacity="0.4" filter="url(#sgf)"/>
 
-        <!-- ── Background matrix hint ── -->
-        <g font-family="monospace" font-size="6.5" fill="rgba(212,168,83,0.08)" text-anchor="middle">
-          <text x="336" y="60">0.885</text>
-          <text x="316" y="50">0.114</text>
-          <text x="346" y="46">0.836</text>
-          <text x="330" y="256">0.256</text>
-          <text x="316" y="268">0.743</text>
-          <text x="346" y="260">0.500</text>
+        <!-- matrix hint -->
+        <g font-family="monospace" font-size="6" fill="rgba(212,168,83,0.08)" text-anchor="middle">
+          <text x="332" y="44">0.885</text>
+          <text x="312" y="36">0.114</text>
+          <text x="330" y="200">0.256</text>
+          <text x="312" y="210">0.743</text>
         </g>
 
-        <!-- Label: sparsity annotation -->
-        <text x="206" y="258" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(255,255,255,0.15)">8 of 16 paths active</text>
-        <line x1="155" y1="254" x2="258" y2="254" stroke="rgba(255,255,255,0.08)" stroke-width="0.6"/>
+        <text x="194" y="196" text-anchor="middle" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.15)">8 of 16 paths active</text>
       </svg>
+    </div>
+
+    <div class="card-body">
+      <div class="tags">
+        <span class="tag">Machine Learning</span>
+        <span class="tag muted">Deep Dive</span>
+      </div>
+      <h2 class="card-title">How a Mixture&#x2011;of&#x2011;Experts Model Actually Works</h2>
+      <p class="card-excerpt">Every number, worked out by hand. A complete walkthrough of MoE architecture — from tokenisation through multi-head attention, expert routing, and FFN processing — using a toy model where every matrix fits on the page.</p>
+      <div class="card-meta">
+        <span>July 2026</span>
+        <span class="dot"></span>
+        <span>45 min read</span>
+        <span class="arrow">→</span>
+      </div>
     </div>
   </a>
 
-</div>
+</main>
 
 <footer>
   <span>© 2026 Rakshit Bhatt</span>
